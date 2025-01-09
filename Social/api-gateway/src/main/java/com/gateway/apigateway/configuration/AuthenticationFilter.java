@@ -1,6 +1,7 @@
 package com.gateway.apigateway.configuration;
 
 import com.gateway.apigateway.dto.ApiResponse;
+import com.gateway.apigateway.dto.request.IntrospectRequest;
 import com.gateway.apigateway.service.IdentityService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -51,14 +52,17 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
 
         // Get token from authorization header
-        List<String> authHeader = exchange.getRequest().getHeaders().get(HttpHeaders.AUTHORIZATION);
+        HttpHeaders headers = exchange.getRequest().getHeaders();
+        List<String> authHeader = headers.get(HttpHeaders.AUTHORIZATION);
         if (CollectionUtils.isEmpty(authHeader))
             return unauthenticated(exchange.getResponse());
-
+        log.info("Auth header: {}", authHeader);
         String token = authHeader.getFirst();
         log.info("Token: {}", token);
-
-        return identityService.introspect(token).flatMap(introspectResponse -> {
+        String refreshToken = authHeader.get(1);
+        log.info("RefreshToken: {}", refreshToken);
+        IntrospectRequest request = IntrospectRequest.builder().token(token).refreshToken(refreshToken).build();
+        return identityService.introspect(request).flatMap(introspectResponse -> {
             if (introspectResponse.getResult().isValid())
                 return chain.filter(exchange);
             else

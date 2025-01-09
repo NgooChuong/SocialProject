@@ -1,4 +1,4 @@
-package com.qlbx.identityservice.entity;
+package com.social.identityservice.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

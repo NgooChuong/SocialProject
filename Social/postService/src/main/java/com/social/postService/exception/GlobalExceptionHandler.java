@@ -1,9 +1,8 @@
-package com.qlbx.identityservice.exception;
+package com.social.postService.exception;
 
 import com.qlbx.identityservice.dto.request.ApiResponse;
 import feign.FeignException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -18,7 +17,7 @@ import java.util.Optional;
 @Slf4j
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(value = org.springframework.security.access.AccessDeniedException.class)
+    @ExceptionHandler(value = AccessDeniedException.class)
     ResponseEntity<ApiResponse> handlingAccessDeniedException(AccessDeniedException exception) {
         ErrorCode errorCode = ErrorCode.UNAUTHORIZED;
 

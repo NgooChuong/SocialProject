@@ -1,4 +1,4 @@
-package com.qlbx.identityservice.exception;
+package com.social.postService.exception;
 
 public class AppException extends RuntimeException{
 

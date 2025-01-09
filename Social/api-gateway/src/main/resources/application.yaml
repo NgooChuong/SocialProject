@@ -6,6 +6,10 @@ app:
 spring:
   application:
     name: api-gateway
+  data:
+    redis:
+      host: localhost # Địa chỉ Redis
+      port: 6379 # Cổng Redis
   cloud:
     gateway:
       routes:

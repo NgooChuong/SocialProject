@@ -1,4 +1,4 @@
-package com.DoAn.QuanLyBaiDoXe.Config;
+package com.social.postService.configuration;
 
 import com.DoAn.QuanLyBaiDoXe.DTO.Request.ApiResponse;
 import com.DoAn.QuanLyBaiDoXe.exception.ErrorCode;

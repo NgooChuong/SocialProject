@@ -1,16 +1,20 @@
-package com.gateway.apigateway.configuration;
+package com.social.identityservice.configuration;
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.sync.RedisCommands;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RedisConfig {
 
+    @Value("${redis.host}")
+    private String redisHost;
+
     @Bean
     public RedisClient redisClient() {
-        return RedisClient.create("redis://localhost:6379"); // Kết nối với Redis
+        return RedisClient.create(redisHost); // Kết nối với Redis
     }
 
     @Bean

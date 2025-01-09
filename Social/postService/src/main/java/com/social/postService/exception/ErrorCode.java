@@ -1,4 +1,4 @@
-package com.qlbx.identityservice.exception;
+package com.social.postService.exception;
 
 import lombok.Getter;
 import org.springframework.http.HttpStatus;

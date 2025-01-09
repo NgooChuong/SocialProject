@@ -1,4 +1,4 @@
-package com.DoAn.QuanLyBaiDoXe.Config;
+package com.social.postService.configuration;
 
 import com.nimbusds.jwt.SignedJWT;
 import org.springframework.security.oauth2.jwt.Jwt;

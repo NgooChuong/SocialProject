@@ -1,16 +1,20 @@
 version: "3"
 services:
-  kafka:
-    image: 'bitnami/kafka:3.7.0'
-    container_name: kafka
-    hostname: kafka
+  redis:
+    image: 'bitnami/redis:6.2.16-debian-12-r3'
+    restart: 'unless-stopped'
+    healthcheck:
+      test: ["CMD", 'redis-cli', "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
     ports:
-      - '9094:9094'
+      - "6379:6379"
+    volumes:
+      - social_volume_identity:/bitnami/redis/data
     environment:
-      - KAFKA_CFG_NODE_ID=0
-      - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - ALLOW_EMPTY_PASSWORD=yes
+
+volumes:
+  social_volume_identity:
+    external: true  # Đảm bảo rằng volume này đã tồn tại trên Docker
