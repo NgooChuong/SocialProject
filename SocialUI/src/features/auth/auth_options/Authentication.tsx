@@ -9,24 +9,25 @@ import React from 'react';
 import {StyleSheet, View} from 'react-native';
 import {WINDOW_HEIGHT, WINDOW_WIDTH} from '../../../core/utils/dimensions';
 import {CustomButton} from '../../../components/Button/Button';
-import {Title2} from '../../../components/Text/Title2';
 import {Image} from '@rneui/base';
 import ICONS from '../../../assets/icons';
 import {Title1} from '../../../components/Text/Title1';
-
-export const Authentication = () => {
+import Header from '../../../components/Header/header';
+import useAuthen from './useFunctions';
+export const Authentication = ({navigation}:any) => {
+  const {handleGoogleLogin, handlePhoneLogin} = useAuthen(navigation);
   const options = [
     {
       name: 'Login with Phone',
       icon: <Image source={ICONS.PHONE} style={styles.icon} />,
-      onPress: () => console.log('Google Pressed'),
+      onPress: handlePhoneLogin,
       styles: styles.button,
       stylesTitle: styles.content,
     },
     {
       name: 'Login with Google',
       icon: <Image source={ICONS.GOOGLE} style={styles.icon} />,
-      onPress: () => console.log('Google Pressed'),
+      onPress: handleGoogleLogin,
       styles: styles.button,
       stylesTitle: styles.content,
     },
@@ -54,10 +55,9 @@ export const Authentication = () => {
 
   return (
     <View style={styles.sectionContainer}>
-      <Image source={ICONS.ILLIT} style={styles.illit} />
+      <Header/>
       <Title1 content={'COFFEE MOKA'} style={styles.title} />
       {buttons}
-
     </View>
   );
 };
@@ -101,5 +101,6 @@ const styles = StyleSheet.create({
   title: {
     textAlign: 'center',
     margin: 10,
+    color:"#fd79a8"
   },
 });

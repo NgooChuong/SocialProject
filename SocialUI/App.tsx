@@ -6,15 +6,16 @@
  */
 
 import React from 'react';
-import {Authentication} from './src/features/auth/auth_options/Authentication';
-import {SafeAreaView} from 'react-native';
+import MainNavigation from './src/navigation/MainNavigation';
+import { configure } from 'mobx';
+import { unstable_batchedUpdates } from 'react-native';
+configure({
+  enforceActions: 'observed',
+  reactionScheduler: unstable_batchedUpdates
+});
 
-function App() {
-  return (
-    <SafeAreaView>
-      <Authentication />
-    </SafeAreaView>
-  );
-}
+const App = () => {
+  return <MainNavigation />;
+};
 
 export default App;
