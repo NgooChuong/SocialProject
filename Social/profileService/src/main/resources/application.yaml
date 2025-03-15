@@ -4,8 +4,6 @@ server:
     context-path: /identity
 
 spring:
-  application:
-    name: IDENTIFY
   datasource:
     url: "jdbc:mysql://localhost:3306/social_identity"
     username: root
@@ -32,20 +30,9 @@ jwt:
 
 app:
   services:
-    information: http://localhost:8081/profile/
+    common: http://localhost:9000/QuanLyBaiDoXe/api/
     faceAuth: http://127.0.0.1:8000/
 
 
 redis:
   host: redis://localhost:6379
-
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/ # Địa chỉ của Eureka Server
-    register-with-eureka: true # Tùy chọn, nếu bạn muốn ứng dụng cũng đăng ký
-    fetch-registry: true # Bắt buộc để lấy thông tin từ Eureka
-    enabled: true
-  instance:
-    hostname: localhost
-#    prefer-ip-address: true # Sử dụng IP thay vì hostname

@@ -22,7 +22,7 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import com.social.identityservice.repository.httpclient.UserUnauthenClent;
+import com.social.identityservice.repository.httpclient.UserUnauthenClient;
 import com.social.identityservice.service.messageproducer.AuthenticationMessageProducer;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -46,8 +46,6 @@ public class AuthenticationService {
     UserRepository userRepository;
     RefreshTokenRepository refreshTokenRepository;
     PasswordEncoder passwordEncoder;
-    UserUnauthenClent userUnauthenClent;
-    AuthenticationMessageProducer authenticationMessageProducer;
     RedisService redisService;
     CustomJwtDecoder customJwtDecoder;
 
@@ -180,38 +178,38 @@ public class AuthenticationService {
                 .build();
     }
 
-    public AuthenticationResponse authenticate(GoogleRequest request) {
-        // check email dưới db qlbdx
-        log.info("vo ham r");
-        log.info(request.getEmail());
-        String username = userUnauthenClent.GetUsername(request.getEmail());
-        log.info("username", username);
-        var user = userRepository.findByUsername(username).orElse(null);
-        log.info("Authenticated: {}", user);
-
-        if (user == null && username == null) {
-            var pass = passwordEncoder.encode("123456789");
-            user = User.builder().username(request.getEmail())
-                    .status(StatusAccount.ACTIVE.name())
-                    .role("USER")
-                    .password(pass)
-                    .build();
-            userRepository.save(user);
-
-            GoogleMessage googleMessage = GoogleMessage
-                    .builder()
-                    .email(request.getEmail())
-                    .password(pass)
-                    .avatar(request.getAvatar())
-                    .build();
-            authenticationMessageProducer.sendSynchronousGoogleMessage(googleMessage);
-        }
-        var token = generateToken(user);
-        return AuthenticationResponse.builder()
-                .token(token)
-                .authenticated(true)
-                .build();
-    }
+//    public AuthenticationResponse authenticate(GoogleRequest request) {
+//        // check email dưới db qlbdx
+//        log.info("vo ham r");
+//        log.info(request.getEmail());
+//        String username = userUnauthenClent.GetUsername(request.getEmail());
+//        log.info("username", username);
+//        var user = userRepository.findByUsername(username).orElse(null);
+//        log.info("Authenticated: {}", user);
+//
+//        if (user == null && username == null) {
+//            var pass = passwordEncoder.encode("123456789");
+//            user = User.builder().username(request.getEmail())
+//                    .status(StatusAccount.ACTIVE.name())
+//                    .role("USER")
+//                    .password(pass)
+//                    .build();
+//            userRepository.save(user);
+//
+//            GoogleMessage googleMessage = GoogleMessage
+//                    .builder()
+//                    .email(request.getEmail())
+//                    .password(pass)
+//                    .avatar(request.getAvatar())
+//                    .build();
+//            authenticationMessageProducer.sendSynchronousGoogleMessage(googleMessage);
+//        }
+//        var token = generateToken(user);
+//        return AuthenticationResponse.builder()
+//                .token(token)
+//                .authenticated(true)
+//                .build();
+//    }
 
     public String RenewToken(User user) {
         if (userRepository.findByUsername(user.getUsername()).isPresent()) {

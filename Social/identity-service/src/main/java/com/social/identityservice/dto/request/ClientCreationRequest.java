@@ -4,16 +4,16 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDate;
 import java.util.Date;
-
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class UserUpdateRequest {
-    String username;
-    String email;
-    String phone;
+public class ClientCreationRequest {
+    String userId;
+    String firstName;
+    String lastName;
+    Date dob;
+    MultipartFile file;
 }

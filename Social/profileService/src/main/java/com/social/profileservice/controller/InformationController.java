@@ -2,7 +2,6 @@ package com.social.identityservice.controller;
 
 import com.social.identityservice.dto.request.ApiResponse;
 import com.social.identityservice.dto.request.UserCreationRequest;
-import com.social.identityservice.dto.request.UserUpdateRequest;
 import com.social.identityservice.dto.response.UserResponse;
 import com.social.identityservice.service.UserService;
 import jakarta.validation.Valid;
@@ -25,11 +24,12 @@ import java.util.List;
 @Slf4j
 public class UserController {
     UserService userService;
-    // xử lý liên quan đến react programing
+
     @PostMapping(value = "/registration",consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
             produces = {MediaType.APPLICATION_JSON_VALUE})
     ApiResponse<UserResponse> createUser(@ModelAttribute @Valid UserCreationRequest request){
         System.out.println("request");
+        System.out.println(request.getAvatar());
         return ApiResponse.<UserResponse>builder()
                 .result(userService.createUser(request))
                 .build();
@@ -63,12 +63,11 @@ public class UserController {
                 .build();
     }
 
-    @PutMapping(value = "/{userId}",consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
-            produces = {MediaType.APPLICATION_JSON_VALUE})
-    ApiResponse<String> updateUser(@PathVariable String userId, @ModelAttribute UserUpdateRequest request){
-        userService.updateUser(userId, request);
-        return ApiResponse.<String>builder()
-                .result("Successfully updated user")
-                .build();
-    }
+//    @PutMapping(value = "/{userId}",consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+//            produces = {MediaType.APPLICATION_JSON_VALUE})
+//    ApiResponse<UserQLBDXResponse> updateUser(@PathVariable String userId, @ModelAttribute UserUpdateRequest request){
+//        return ApiResponse.<UserQLBDXResponse>builder()
+//                .result(userService.updateUser(userId, request))
+//                .build();
+//    }
 }

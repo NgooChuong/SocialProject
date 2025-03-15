@@ -25,8 +25,8 @@ public class UserCreationRequest {
     String phone;
     String firstName;
     String lastName;
-    Date dateOfBirth;
-    MultipartFile avatar;
+    Date dob;
+    MultipartFile file;
     String login_at;
     String google_id;
 }

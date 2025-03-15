@@ -27,9 +27,8 @@ public class GlobalExceptionHandler {
                         .message(errorCode.getMessage())
                         .build());
     }
-
     @ExceptionHandler(value = Exception.class)
-    ResponseEntity<ApiResponse> handlingRuntimeException(RuntimeException exception) {
+    ResponseEntity<ApiResponse> handlingRuntimeException(RuntimeException exception){
         log.error("Exception: ", exception);
         ApiResponse apiResponse = new ApiResponse();
 
@@ -38,25 +37,48 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.badRequest().body(apiResponse);
     }
+    @ExceptionHandler(value = FeignException.class)
+    public ResponseEntity<ApiResponse> handlingFeignException(FeignException exception) {
+        // Lấy thông điệp lỗi từ responseBody của FeignException
+        String errorMessage = "An error occurred";
+        Optional<ByteBuffer> responseBody = exception.responseBody();
+        if (responseBody.isPresent()) {
+            // Chuyển đổi ByteBuffer thành byte[]
+            ByteBuffer byteBuffer = responseBody.get();
+            byte[] bytes = new byte[byteBuffer.remaining()];
+            byteBuffer.get(bytes);
+            // Chuyển đổi byte[] thành String
+            errorMessage = new String(bytes, StandardCharsets.UTF_8);
+        }
+        // Ghi log thông điệp lỗi nếu cần
+        log.error("FeignException occurred: " + errorMessage);
+
+        ApiResponse apiResponse = new ApiResponse();
+        apiResponse.setCode(ErrorCode.ATTRIBUTE_EXISTED.getCode());
+        apiResponse.setMessage(ErrorCode.ATTRIBUTE_EXISTED.getMessage());
+        return ResponseEntity.badRequest().body(apiResponse);
+    }
 
     @ExceptionHandler(value = AppException.class)
-    ResponseEntity<ApiResponse> handlingAppException(AppException exception) {
+    ResponseEntity<ApiResponse> handlingAppException(AppException exception){
         ErrorCode errorCode = exception.getErrorCode();
         ApiResponse apiResponse = new ApiResponse();
+
         apiResponse.setCode(errorCode.getCode());
         apiResponse.setMessage(errorCode.getMessage());
+
         return ResponseEntity.badRequest().body(apiResponse);
     }
 
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
-    ResponseEntity<ApiResponse> handlingValidation(MethodArgumentNotValidException exception) {
+    ResponseEntity<ApiResponse> handlingValidation(MethodArgumentNotValidException exception){
         String enumKey = exception.getFieldError().getDefaultMessage();
 
         ErrorCode errorCode = ErrorCode.INVALID_KEY;
 
         try {
             errorCode = ErrorCode.valueOf(enumKey);
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException e){
 
         }
 
