@@ -1,15 +1,15 @@
-package com.social.identityservice.mapper;
+package com.social.profileservice.mapper;
 
-import com.social.identityservice.entity.Information;
+import com.social.profileservice.dto.request.InformationCreateRequest;
+import com.social.profileservice.dto.request.InformationRequest;
+import com.social.profileservice.dto.response.InformationResponse;
+import com.social.profileservice.entity.Information;
 import org.mapstruct.Mapper;
-import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring")
-public interface UserMapper {
-    Information toUser(UserCreationRequest request);
+public interface InformationMapper {
+    Information toInformation(InformationCreateRequest request);
 
-    UserResponse toUserResponse(Information user);
-
-    void updateUser(@MappingTarget Information user, UserUpdateRequest request);
+    InformationResponse toInformationResponse(Information entity);
 
 }

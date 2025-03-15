@@ -1,8 +1,8 @@
-package com.social.identityservice.configuration;
+package com.social.profileservice.configuration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.social.identityservice.dto.request.ApiResponse;
-import com.social.identityservice.exception.ErrorCode;
+import com.social.profileservice.dto.request.ApiResponse;
+import com.social.profileservice.exception.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;

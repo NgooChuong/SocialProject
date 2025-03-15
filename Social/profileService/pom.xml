@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.social</groupId>
-	<artifactId>identity-service</artifactId>
-	<name>identity-service</name>
+	<artifactId>profileService</artifactId>
+	<name>profileService</name>
 	<version>0.0.1-SNAPSHOT</version>
-	<description>Identity service</description>
+	<description>profileService</description>
 	<properties>
 		<java.version>21</java.version>
 		<projectlombok-lombok.version>1.18.30</projectlombok-lombok.version>
@@ -81,6 +81,15 @@
 			<groupId>io.lettuce</groupId>
 			<artifactId>lettuce-core</artifactId>
 			<version>6.5.1.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>com.cloudinary</groupId>
+			<artifactId>cloudinary-http44</artifactId>
+			<version>1.29.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
 		</dependency>
 	</dependencies>
 	<dependencyManagement>

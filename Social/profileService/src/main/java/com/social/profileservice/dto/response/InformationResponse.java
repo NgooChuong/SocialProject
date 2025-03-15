@@ -1,7 +1,9 @@
-package com.social.identityservice.dto.response;
+package com.social.profileservice.dto.response;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+
+import java.util.Date;
 
 @Data
 @NoArgsConstructor
@@ -9,11 +11,9 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class InformationResponse {
-     String username;
+     String id;
      String firstName;
      String lastName;
-     String email;
-     String phone;
-     String role;
+     Date dob;
      String avatar;
 }

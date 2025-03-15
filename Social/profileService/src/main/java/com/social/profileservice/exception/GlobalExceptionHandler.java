@@ -1,6 +1,6 @@
-package com.social.identityservice.exception;
+package com.social.profileservice.exception;
 
-import com.social.identityservice.dto.request.ApiResponse;
+import com.social.profileservice.dto.request.ApiResponse;
 import feign.FeignException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;

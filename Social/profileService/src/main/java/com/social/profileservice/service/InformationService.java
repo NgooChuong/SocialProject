@@ -1,92 +1,80 @@
-package com.social.identityservice.service;
+package com.social.profileservice.service;
 
-import com.social.identityservice.dto.request.UserCreationRequest;
-import com.social.identityservice.dto.request.UserUpdateRequest;
-import com.social.identityservice.dto.response.InformationResponse;
-import com.social.identityservice.dto.response.UserResponse;
-import com.social.identityservice.entity.User;
-import com.social.identityservice.enums.Role;
-import com.social.identityservice.enums.StatusAccount;
-import com.social.identityservice.exception.AppException;
-import com.social.identityservice.exception.ErrorCode;
-import com.social.identityservice.mapper.UserMapper;
-import com.social.identityservice.repository.UserRepository;
-import com.social.identityservice.repository.httpclient.UserClient;
-import com.social.identityservice.repository.httpclient.UserUnauthenClent;
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
+import com.social.profileservice.dto.request.InformationCreateRequest;
+import com.social.profileservice.dto.request.InformationRequest;
+import com.social.profileservice.dto.response.InformationResponse;
+import com.social.profileservice.entity.Information;
+import com.social.profileservice.exception.AppException;
+import com.social.profileservice.exception.ErrorCode;
+import com.social.profileservice.mapper.InformationMapper;
+import com.social.profileservice.repository.InformationRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-import java.util.List;
+import java.io.IOException;
+import java.util.Map;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class UserService {
-    UserRepository userRepository;
-    UserMapper userMapper;
-    PasswordEncoder passwordEncoder;
-    UserClient userClient;
-    UserUnauthenClent userUnauthenClent;
+public class InformationService {
+    InformationRepository informationRepository;
+    InformationMapper informationMapper;
+    Cloudinary cloudinary;
 
+    public InformationResponse createProfile(InformationCreateRequest request) {
+        if (!(request.getFile() == null)) {
+            try {
+                Map res = this.cloudinary.uploader().upload(request.getFile().getBytes(),
+                        ObjectUtils.asMap("resource_type", "auto"));
 
-    public UserResponse createUser(UserCreationRequest request){
-        if (userRepository.existsByUsername(request.getUsername())||
-            userRepository.existsByEmail(request.getEmail())||
-            userRepository.existsByGoogleId(request.getGoogle_id())||
-            userRepository.existsByPhone(request.getPhone()))
-            throw new AppException(ErrorCode.USER_EXISTED);
-
-        request.setPassword(passwordEncoder.encode(request.getPassword()));
-
-         InformationResponse qlbdxResponse = userUnauthenClent.createUser(request);
-
-        User user = userMapper.toUser(request);
-        user.setUsername(request.getUsername());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        if (request.getPhone()!=null)
-            user.setPhone(request.getPhone());
-        user.setCreateAt(new Date());
-        user.setLoginAt(new Date());
-        user.setRole(Role.USER.name());
-        user.setStatus(StatusAccount.ACTIVE.name());
-        if (request.getGoogle_id() != null) {
-            user.setGoogleId(request.getGoogle_id());
-            user.setEmail(request.getGoogle_id());
+                request.setAvatar(res.get("secure_url").toString());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
-        user =userRepository.save(user);
-        return userMapper.toUserResponse(user);
+        // mapper k dc do cái request k có avatar
+        Information userProfile = informationMapper.toInformation(request);
+        informationRepository.save(userProfile);
+        return informationMapper.toInformationResponse(userProfile);
     }
 
-//    public InformationResponse updateUser(String userId, UserUpdateRequest request) {
-//        User user = userRepository.findByUserId(userId)
-//                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-//        // update ben identitydb
-//        userMapper.updateUser(user, request);
-//        userRepository.save(user); // luu username
-//        InformationResponse updatedUser = userClient.updateUser(userId,request);
-//        return updatedUser;
-//    }
+    public InformationResponse getProfile(String id) {
+        Information userProfile =
+                informationRepository.findById(id).orElseThrow(() -> new RuntimeException("Profile not found"));
 
-    public void deleteUser(String userId){
-        userRepository.deleteById(userId);
+        return informationMapper.toInformationResponse(userProfile);
     }
 
-    public List<UserResponse> getUsers(){
-        return userRepository.findAll().stream()
-                .map(userMapper::toUserResponse).toList();
+    public InformationResponse updateUser(String userId, InformationCreateRequest request) {// dang loi tu nhien tao user moi
+        Information user = informationRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        if (!(request.getFile() == null)) {
+            log.info(request.getFile().toString());
+            try {
+                Map res = this.cloudinary.uploader().upload(request.getFile().getBytes(),
+                        ObjectUtils.asMap("resource_type", "auto"));
+                request.setAvatar(res.get("secure_url").toString());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setDob(request.getDob());
+        user.setAvatar(request.getAvatar());
+        informationRepository.save(user);
+        return informationMapper.toInformationResponse(user);
     }
 
-    public UserResponse getUser(String id){
-        return userMapper.toUserResponse(userRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED)));
+    public void deleteUser(String userId) {
+        informationRepository.deleteById(userId);
     }
-    public boolean existUser(String username){
-        return userRepository.existsByUsername(username);
-    }
+
 }

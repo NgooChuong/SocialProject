@@ -1,4 +1,4 @@
-package com.social.identityservice.configuration;
+package com.social.profileservice.configuration;
 
 import com.nimbusds.jwt.SignedJWT;
 import org.springframework.security.oauth2.jwt.Jwt;

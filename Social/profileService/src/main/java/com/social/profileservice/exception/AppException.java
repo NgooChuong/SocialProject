@@ -1,4 +1,4 @@
-package com.social.identityservice.exception;
+package com.social. profileservice.exception;
 
 public class AppException extends RuntimeException{
 

@@ -1,11 +1,13 @@
 server:
-  port: 8080
+  port: 8081
   servlet:
-    context-path: /identity
+    context-path: /profile
 
 spring:
+  application:
+    name: PROFILE
   datasource:
-    url: "jdbc:mysql://localhost:3306/social_identity"
+    url: "jdbc:mysql://localhost:3306/socialuserinformation"
     username: root
     password: ngoquang178
   jpa:
@@ -30,9 +32,19 @@ jwt:
 
 app:
   services:
-    common: http://localhost:9000/QuanLyBaiDoXe/api/
-    faceAuth: http://127.0.0.1:8000/
+    identity: http://localhost:8080/identity/
 
 
 redis:
   host: redis://localhost:6379
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/ # Địa chỉ của Eureka Server
+    register-with-eureka: true # Tùy chọn, nếu bạn muốn ứng dụng cũng đăng ký
+    fetch-registry: true # Bắt buộc để lấy thông tin từ Eureka
+    enabled: true
+  instance:
+    hostname: localhost
+#    prefer-ip-address: true # Sử dụng IP thay vì hostname

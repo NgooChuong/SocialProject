@@ -1,4 +1,4 @@
-package com.social.identityservice.configuration;
+package com.social.profileservice.configuration;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,38 +21,32 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    private final String[] PUBLIC_ENDPOINTS = {"/users/registration",
-            "/auth/token", "/auth/introspect","/auth/face/token", "/auth/google/token",
-
-    };
+    private final String[] PUBLIC_ENDPOINTS = {"/users"};
     private final String[] SWAGGER_ENDPOINTS = {"/swagger-ui/**",
             "/v3/api-docs/**", "/swagger-resources/**",
             "/webjars/**"};
     @Autowired
     private CustomJwtDecoder customJwtDecoder;
 
-    @Value("${jwt.signerKey}")
-    private String signerKey;
-
-        @Bean
-        public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
-            httpSecurity.authorizeHttpRequests(request ->
-                    request.requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
-                            .requestMatchers(SWAGGER_ENDPOINTS).permitAll()
-                            .anyRequest().authenticated()
-            );
-            httpSecurity.oauth2ResourceServer(oauth2 ->
-                    // tự động gắn Bear vào token
-                    oauth2.bearerTokenResolver(new HeaderBearerTokenResolver("Authorization")).
-                            jwt(jwtConfigurer ->
-                            jwtConfigurer.decoder(customJwtDecoder)// parse ve kieu JWT
-                                    .jwtAuthenticationConverter(jwtAuthenticationConverter())// gắn thêm prefix role
-                    ).authenticationEntryPoint(new JwtAuthenticationEntryPoint())
-                    //JwtAuthenticationEntryPoint: để trả về reponse theo chuẩn RESTful khi thuc hien xac thuc
-            );
-            httpSecurity.csrf(AbstractHttpConfigurer::disable);
-            return httpSecurity.build();
-        }
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
+        httpSecurity.authorizeHttpRequests(request ->
+                request.requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
+                        .requestMatchers(SWAGGER_ENDPOINTS).permitAll()
+                        .anyRequest().authenticated()
+        );
+        httpSecurity.oauth2ResourceServer(oauth2 ->
+                        // tự động gắn Bear vào token
+                        oauth2.bearerTokenResolver(new HeaderBearerTokenResolver("Authorization")).
+                                jwt(jwtConfigurer ->
+                                        jwtConfigurer.decoder(customJwtDecoder)// parse ve kieu JWT
+                                                .jwtAuthenticationConverter(jwtAuthenticationConverter())// gắn thêm prefix role
+                                ).authenticationEntryPoint(new JwtAuthenticationEntryPoint())
+                //JwtAuthenticationEntryPoint: để trả về reponse theo chuẩn RESTful khi thuc hien xac thuc
+        );
+        httpSecurity.csrf(AbstractHttpConfigurer::disable);
+        return httpSecurity.build();
+    }
 
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
@@ -67,19 +61,5 @@ public class SecurityConfig {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
         return converter;
-    }
-    // mã hóa và xác thực
-//    @Bean
-//    JwtDecoder jwtDecoder(){
-//        SecretKeySpec secretKeySpec = new SecretKeySpec(signerKey.getBytes(), "HS512");
-//        return NimbusJwtDecoder
-//                .withSecretKey(secretKeySpec)
-//                .macAlgorithm(MacAlgorithm.HS512)
-//                .build();
-//    }
-
-    @Bean
-    PasswordEncoder passwordEncoder(){
-        return new BCryptPasswordEncoder(10);
     }
 }

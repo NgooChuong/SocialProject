@@ -1,6 +1,7 @@
 package com.gateway.apigateway.configuration;
 
 import com.gateway.apigateway.repository.IdentityClient;
+import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
@@ -14,11 +15,13 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 import java.util.List;
 
 @Configuration
+
 public class WebClientConfiguration {
     //WebClient: Đây là một client không đồng bộ (asynchronous)
     // được sử dụng để gọi các API RESTful
     // hoặc dịch vụ web khác trong các ứng dụng Spring WebFlux.
     @Bean
+    @LoadBalanced
     WebClient webClient(){
         return WebClient.builder() //Sử dụng builder pattern để tạo ra một WebClient
                 .baseUrl("http://localhost:8080/identity")

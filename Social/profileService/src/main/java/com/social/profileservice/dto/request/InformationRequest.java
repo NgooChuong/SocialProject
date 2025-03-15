@@ -1,4 +1,4 @@
-package com.social.profileservice.dto.response;
+package com.social.profileservice.dto.request;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -10,8 +10,7 @@ import java.util.Date;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class InformationResponse {
-     String id;
+public class InformationRequest {
      String userId;
      String firstName;
      String lastName;
