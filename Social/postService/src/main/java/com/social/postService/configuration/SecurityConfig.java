@@ -20,11 +20,9 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    private final String[] PUBLIC_POST_ENDPOINTS = {
-            "/api/internal/users","/api/internal/email"
-    };
-    private final String[] PUBLIC_GET_ENDPOINTS = {
-    };
+    private final String[] SWAGGER_ENDPOINTS = {"/swagger-ui/**",
+            "/v3/api-docs/**", "/swagger-resources/**",
+            "/webjars/**"};
 
     @Autowired
     private CustomJwtDecoder customJwtDecoder;
@@ -35,8 +33,7 @@ public class SecurityConfig {
         @Bean
         public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
             httpSecurity.authorizeHttpRequests(request ->
-                    request.requestMatchers(HttpMethod.POST, PUBLIC_POST_ENDPOINTS).permitAll()
-                    .requestMatchers(HttpMethod.GET, PUBLIC_GET_ENDPOINTS).permitAll()
+                    request.requestMatchers(SWAGGER_ENDPOINTS).permitAll()
                             .anyRequest().authenticated()
             );
             httpSecurity.oauth2ResourceServer(oauth2 ->

@@ -1,0 +1,37 @@
+server:
+  port: 8111
+  servlet:
+    context-path: /post
+
+
+spring:
+  application:
+    name: POST
+  datasource:
+    url: "jdbc:mysql://localhost:3306/social_post"
+    username: root
+    password: ngoquang178
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+#  rabbitmq:
+#    host: localhost
+#    port: 5672
+#    username: guest
+#    password: guest
+
+jwt:
+  signerKey: "1TjXchw5FloESb63Kc+DFhTARvpWL4jUGCwfGWxuG5SIf/1y/LgJxHnMqaF6A/ij"
+
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/ # Địa chỉ của Eureka Server
+    register-with-eureka: true # Tùy chọn, nếu bạn muốn ứng dụng cũng đăng ký
+    fetch-registry: true # Bắt buộc để lấy thông tin từ Eureka
+    enabled: true
+  instance:
+    hostname: localhost
+#    prefer-ip-address: true # Sử dụng IP thay vì hostname

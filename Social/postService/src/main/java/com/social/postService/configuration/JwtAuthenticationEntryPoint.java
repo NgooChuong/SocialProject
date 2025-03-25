@@ -1,8 +1,9 @@
 package com.social.postService.configuration;
 
-import com.DoAn.QuanLyBaiDoXe.DTO.Request.ApiResponse;
-import com.DoAn.QuanLyBaiDoXe.exception.ErrorCode;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.social.postService.dto.request.ApiResponse;
+import com.social.postService.exception.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
@@ -20,7 +21,6 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
         response.setStatus(errorCode.getStatusCode().value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-
         ApiResponse<?> apiResponse = ApiResponse.builder()
                 .code(errorCode.getCode())
                 .message(errorCode.getMessage())

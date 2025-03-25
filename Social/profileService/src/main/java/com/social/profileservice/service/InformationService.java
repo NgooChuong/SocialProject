@@ -52,6 +52,12 @@ public class InformationService {
         return informationMapper.toInformationResponse(userProfile);
     }
 
+    public InformationResponse getProfileByUserId(String id) {
+        Information userProfile =
+                informationRepository.findByUserId(id).orElseThrow(() -> new RuntimeException("Profile not found"));
+        return informationMapper.toInformationResponse(userProfile);
+    }
+
     public InformationResponse updateUser(String userId, InformationCreateRequest request) {// dang loi tu nhien tao user moi
         Information user = informationRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));

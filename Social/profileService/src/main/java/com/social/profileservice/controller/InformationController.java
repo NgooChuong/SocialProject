@@ -25,6 +25,14 @@ public class InformationController {
                 .result(informationService.getProfile(profileId))
                 .build();
     }
+
+    @GetMapping("/post/{userId}")
+    ApiResponse<InformationResponse> getProfileByUserId(@PathVariable String userId) {
+        return ApiResponse.<InformationResponse>builder()
+                .result(informationService.getProfileByUserId(userId))
+                .build();
+    }
+
     @PostMapping
     ApiResponse<InformationResponse> createProfile(@ModelAttribute InformationCreateRequest request) {
         return ApiResponse.<InformationResponse>builder()

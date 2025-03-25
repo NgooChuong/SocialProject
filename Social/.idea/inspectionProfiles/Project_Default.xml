@@ -1,0 +1,38 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="VulnerableLibrariesLocal" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="isIgnoringEnabled" value="true" />
+      <option name="ignoredModules">
+        <list>
+          <option value="postService" />
+          <option value="postService" />
+          <option value="postService" />
+          <option value="postService" />
+          <option value="postService" />
+          <option value="postService" />
+        </list>
+      </option>
+      <option name="ignoredPackages">
+        <list>
+          <option value="org.apache.httpcomponents:httpclient:4.4" />
+          <option value="net.minidev:json-smart:2.5.1" />
+          <option value="io.netty:netty-common:4.1.116.Final" />
+          <option value="io.netty:netty-handler:4.1.116.Final" />
+          <option value="com.fasterxml.woodstox:woodstox-core:6.2.1" />
+          <option value="com.thoughtworks.xstream:xstream:1.4.19" />
+        </list>
+      </option>
+      <option name="ignoredReasons">
+        <list>
+          <option value="Not exploitable" />
+          <option value="Not exploitable" />
+          <option value="Not exploitable" />
+          <option value="Not exploitable" />
+          <option value="Not exploitable" />
+          <option value="Not exploitable" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
