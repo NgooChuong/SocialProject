@@ -14,7 +14,7 @@ import java.sql.Timestamp;
 // EX: user1, user2 extend user
 @Data
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public abstract class Base {
+public abstract class   Base {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     String id;

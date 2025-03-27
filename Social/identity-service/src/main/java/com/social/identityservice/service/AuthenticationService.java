@@ -30,7 +30,10 @@ import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import java.text.ParseException;
 import java.time.Instant;
@@ -211,10 +214,19 @@ public class AuthenticationService {
 //                .build();
 //    }
 
-    public String RenewToken(User user) {
-        if (userRepository.findByUsername(user.getUsername()).isPresent()) {
-            return generateToken(user);
+    public void logout() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !(authentication.getPrincipal() instanceof Jwt jwt)) {
+                throw new AppException(ErrorCode.UNAUTHENTICATED);
+            }
+            String userId = jwt.getClaimAsString("userId");
+            redisService.delete(userId);
+        }catch (Exception e) {
+            log.error("Cannot logout user", e);
         }
-        return null;
+
     }
+
+
 }

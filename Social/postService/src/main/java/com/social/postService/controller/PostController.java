@@ -14,6 +14,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpMessage;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -48,11 +50,13 @@ public class PostController {
     }
     @PutMapping(value= "/update/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ApiResponse<PostResponse> updatePost(@PathVariable("id") String id, @ModelAttribute @Valid UpdatePostRequest updatePostRequest) {
-        return null;
+        return ApiResponse.<PostResponse>builder().result(postService.update(id, updatePostRequest)).build();
     }
 
     @DeleteMapping(value = "/delete/{id}")
-    public void deletePost(@PathVariable("id") String id) {
+    public ApiResponse<?> deletePost(@PathVariable("id") String id) {
+        postService.delete(id);
+        return ApiResponse.builder().code(HttpStatus.NO_CONTENT.value()).build();
     }
 
 }

@@ -5,9 +5,9 @@ import lombok.experimental.FieldDefaults;
 
 @Data
 @NoArgsConstructor
-//@AllArgsConstructor
+@AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class CreateCommentRequest {
-
+public class CreateReactionRequest {
+    String iconName;
 }

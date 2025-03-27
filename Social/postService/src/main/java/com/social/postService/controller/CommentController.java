@@ -20,6 +20,10 @@ import java.util.List;
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class CommentController {
+    @GetMapping("/{postId}")
+    public ApiResponse<?> getCommentInPost(@PathVariable String postId) {
+        return null;
+    }
 
     @PostMapping(value= "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ApiResponse<CommentResponse> createComment(@ModelAttribute @Valid CreateCommentRequest createCommentRequest) {

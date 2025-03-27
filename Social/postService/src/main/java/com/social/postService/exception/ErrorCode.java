@@ -19,6 +19,14 @@ public enum ErrorCode {
     INVALID_EMAIL (1009, "Invalid email address", HttpStatus.BAD_REQUEST),
     PROFILE_CREATION_FAILED (1010, "Profile creation failed", HttpStatus.INTERNAL_SERVER_ERROR),
     THREAD_ERROR (1011, "Thread error", HttpStatus.INTERNAL_SERVER_ERROR),
+    POST_NOT_EXISTED (1012, "Post not existed", HttpStatus.NOT_FOUND),
+    INVALID_REACTION_TYPE (1013, "Invalid reaction type", HttpStatus.BAD_REQUEST),
+    NOT_FIND_SERVER (1014, "Not find server", HttpStatus.NOT_FOUND),
+    INTERACTION_NOT_FOUND (1015, "Interaction not found", HttpStatus.NOT_FOUND),
+    CLOUDINARY_DELETE_FAILED(1016, "Cloudinary delete failed", HttpStatus.INTERNAL_SERVER_ERROR),
+    UPDATE_ERROR(1017, "Update is error", HttpStatus.INTERNAL_SERVER_ERROR),
+    DELETE_ERROR(1018, "Delete is error", HttpStatus.INTERNAL_SERVER_ERROR),
+
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

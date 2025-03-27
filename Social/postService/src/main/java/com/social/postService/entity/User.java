@@ -22,9 +22,11 @@ public class User {
     @OneToMany(mappedBy = "user",cascade = CascadeType.REMOVE, targetEntity = Post.class)
     List<Post> posts;
 
+    @ToString.Exclude // ⚠️ Tránh vòng lặp vô hạn
     @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE)
     List<UserPostInteraction> postExpresses;
 
+    @ToString.Exclude // ⚠️ Tránh vòng lặp vô hạn
     @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE)
     List<UserCommentInteraction> cmtExpresses;
 }

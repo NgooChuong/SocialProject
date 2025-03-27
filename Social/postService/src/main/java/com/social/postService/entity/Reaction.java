@@ -1,8 +1,11 @@
 package com.social.postService.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.OneToOne;
+import com.social.postService.enums.ReactionType;
+import com.social.postService.service.ReactionService;
+import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.List;
 
 @Entity
 @NoArgsConstructor
@@ -11,9 +14,10 @@ import lombok.*;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class Reaction extends Base{
-    String iconName;
-    @OneToOne(mappedBy = "reaction")
-    UserPostInteraction userPostInteraction;
+    @Enumerated(EnumType.STRING) // ORDINAL is store as number form in db
+    ReactionType iconName;
+    @OneToMany(mappedBy = "reaction")
+    List<UserPostInteraction> userPostInteraction;
 
     @OneToOne(mappedBy = "reaction")
     UserCommentInteraction userCommentInteraction;

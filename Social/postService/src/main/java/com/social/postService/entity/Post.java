@@ -24,9 +24,11 @@ public class Post extends Base {
     @JoinColumn(name="userId")
     User user;
 
+    @ToString.Exclude // ⚠️ Tránh vòng lặp vô hạn
     @OneToMany(mappedBy = "post", cascade = CascadeType.REMOVE)
     List<UserPostInteraction> userExpresses;
 
+    @ToString.Exclude // ⚠️ Tránh vòng lặp vô hạn
     @ManyToMany
     @JoinTable(
             name = "post_tag",
@@ -36,6 +38,7 @@ public class Post extends Base {
     )
     List<Tag> tags;
 
+    @ToString.Exclude // ⚠️ Tránh vòng lặp vô hạn
     @OneToMany(mappedBy = "post", cascade = CascadeType.REMOVE)
     List<Picture> pics;
 }

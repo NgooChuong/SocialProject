@@ -3,27 +3,21 @@ package com.social.postService.service;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.social.postService.dto.request.CreatePostRequest;
+import com.social.postService.dto.request.UpdatePostRequest;
 import com.social.postService.dto.response.InformationResponse;
 import com.social.postService.dto.response.PostResponse;
-import com.social.postService.entity.Picture;
-import com.social.postService.entity.Post;
-import com.social.postService.entity.Tag;
-import com.social.postService.entity.User;
+import com.social.postService.entity.*;
 import com.social.postService.enums.MediaType;
 import com.social.postService.exception.AppException;
 import com.social.postService.exception.ErrorCode;
 import com.social.postService.mapper.PostMapper;
-import com.social.postService.repository.PictureRepository;
-import com.social.postService.repository.PostRepository;
-import com.social.postService.repository.TagRepository;
-import com.social.postService.repository.UserRepository;
+import com.social.postService.repository.*;
 import com.social.postService.repository.httpClient.ProfileClient;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -35,7 +29,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ForkJoinPool;
+
 
 @Service
 @Transactional
@@ -49,6 +43,7 @@ public class PostService {
     PictureRepository pictureRepository;
     Cloudinary cloudinary;
     ProfileClient profileClient;
+    UserPostInteractionRepository userPostInteractionRepository;
 
     private void storeTagsNonAvailable(List<String> tags) {
         if (tags.isEmpty()) return;
@@ -90,7 +85,7 @@ public class PostService {
                         .filter(Objects::nonNull)
                         .toList());
         List<Picture> uploadedPics = allFutures.join();
-        return uploadedPics.isEmpty() ? Collections.emptyList() : pictureRepository.saveAll(uploadedPics);
+        return uploadedPics.isEmpty() ? Collections.emptyList() : uploadedPics;
     }
 
     private User createInstanceUser() { // current user
@@ -121,7 +116,7 @@ public class PostService {
             List<Tag> newTagsList = tagsFuture.get();
             List<Picture> pictures = picsFuture.get();
 
-            Post newPost = postRepository.save(Post.builder()
+            Post newPost =Post.builder()
                     .user(createInstanceUser())
                     .title(createPostRequest.getTitle())
                     .content(createPostRequest.getContent())
@@ -129,17 +124,108 @@ public class PostService {
                     .mediaType(MediaType.valueOf(createPostRequest.getMediaType()))
                     .pics(pictures)
                     .tags(newTagsList)
-                    .build());
+                    .build();
             if (newPost.getPics() != null) {
-                newPost.getPics().forEach(pic -> pic.setPost(newPost));
+                log.info("abc");
+                pictures.forEach(pic -> pic.setPost(newPost));
+                pictureRepository.saveAll(pictures);
             }
-            return PostMapper.INSTANCE.toPostResponse(newPost);
+
+            return PostMapper.INSTANCE.toPostResponse(postRepository.save(newPost));
         } catch (InterruptedException | ExecutionException e) {
             log.error("Error while processing Post creation", e);
             throw new AppException(ErrorCode.THREAD_ERROR);
         } catch (CompletionException e) {
             log.error("Error while processing Post creation", e);
             throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
+        }
+    }
+
+    // Trích xuất public_id từ URL
+    private String extractPublicIdFromUrl(String imageUrl) {
+        if (imageUrl == null || imageUrl.isEmpty()) {
+            throw new IllegalArgumentException("Image URL cannot be null or empty");
+        }
+
+        // Ví dụ URL: https://res.cloudinary.com/your_cloud_name/image/upload/v1234567890/folder/image123.jpg
+        String[] parts = imageUrl.split("/");
+
+        // Tìm phần sau "upload" hoặc "v{version}"
+        int uploadIndex = -1;
+        for (int i = 0; i < parts.length; i++) {
+            if (parts[i].equals("upload") || parts[i].startsWith("v")) {
+                uploadIndex = i;
+                break;
+            }
+        }
+
+        if (uploadIndex == -1 || uploadIndex + 1 >= parts.length) {
+            throw new IllegalArgumentException("Invalid Cloudinary URL: " + imageUrl);
+        }
+
+        // Lấy phần sau "upload" hoặc "v{version}" và bỏ đuôi file
+        String publicIdWithExt = String.join("/", Arrays.copyOfRange(parts, uploadIndex + 1, parts.length));
+        return publicIdWithExt.substring(0, publicIdWithExt.lastIndexOf(".")); // Bỏ phần mở rộng (.jpg, .png, v.v.)
+    }
+
+    private void deletePicInCloud(Picture pictures) {
+        try {
+            String publicId = extractPublicIdFromUrl(pictures.getUrl());
+            Map result = cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
+            log.info("Deleted image with public_id: {}. Result: {}", publicId, result);
+        } catch (Exception e) {
+            log.error("Error deleting image with URL: {}", pictures.getUrl(), e);
+            throw new AppException(ErrorCode.CLOUDINARY_DELETE_FAILED);
+        }
+    }
+
+    private void deletePicsInCloud(List<Picture> pictures) {
+        pictures.forEach(this::deletePicInCloud);
+    }
+
+    public PostResponse update(String postId, UpdatePostRequest updatePostRequest) {
+        // Tìm bài viết hoặc ném lỗi nếu không tồn tại
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_EXISTED));
+        MediaType mediaType = Objects.isNull(updatePostRequest.getMediaType()) ?
+                post.getMediaType() : MediaType.valueOf(updatePostRequest.getMediaType());
+        // Cập nhật các trường từ UpdatePostRequest
+        Optional.ofNullable(updatePostRequest.getTitle()).ifPresent(post::setTitle);
+        Optional.ofNullable(updatePostRequest.getContent()).ifPresent(post::setContent);
+        Optional.ofNullable(updatePostRequest.getIsPrivate()).ifPresent(post::setIsPrivate);
+        Optional.of(mediaType).ifPresent(post::setMediaType);
+        List<String> requestedTags = Optional.ofNullable(updatePostRequest.getTags())
+                .orElse(Collections.emptyList());
+        storeTagsNonAvailable(requestedTags);
+        List<Tag> tags = tagRepository.findByNameIn(requestedTags);
+        Optional.of(tags.isEmpty() ? post.getTags() : tags).ifPresent(post::setTags);
+        // update  hinh
+        try {
+            List<Picture> pictures = storePicsToCloudinary(updatePostRequest.getPictures());
+            pictureRepository.deleteAll(post.getPics());
+            post.setPics(pictures);
+            if (post.getPics() != null) {
+                post.getPics().forEach(pic -> pic.setPost(post));
+            }
+        } catch (Exception e) {
+            log.error("Error while updating picture", e);
+            throw new AppException(ErrorCode.UPDATE_ERROR);
+        }
+        // Lưu và trả về kết quả
+        return PostMapper.INSTANCE.toPostResponse(postRepository.save(post));
+    }
+
+    public void delete(String postId) {
+        User user = createInstanceUser();
+        Post p = postRepository.findById(postId).orElseThrow(() -> new AppException(ErrorCode.POST_NOT_EXISTED));
+        if (!p.getUser().getId().equals(user.getId())) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+        try {
+            postRepository.deleteById(postId);
+        }
+        catch (Exception e) {
+            throw new AppException(ErrorCode.DELETE_ERROR);
         }
     }
 }

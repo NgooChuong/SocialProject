@@ -30,6 +30,7 @@ public class Tag extends Base{
     @Column(name = "is_active", columnDefinition = "BOOLEAN DEFAULT TRUE")
     boolean isActive;
 
+    @ToString.Exclude // ⚠️ Tránh vòng lặp vô hạn
     @ManyToMany(mappedBy = "tags")
     List<Post> posts;
 }
