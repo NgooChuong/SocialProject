@@ -24,10 +24,14 @@ public class ReactionController {
     // like là phan ung cap nhat post lien
 
     @GetMapping("/{postId}")
-    public ApiResponse<List<UserReactionResponse>> getReactionInPost(@PathVariable("postId") String postId,
-                                                                     @RequestParam("type") String type) {
+    public ApiResponse<List<UserReactionResponse>> getReactionInPost(
+            @PathVariable("postId") String postId,
+            @RequestParam(value = "type", defaultValue = "ALL") String type,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
         return ApiResponse.<List<UserReactionResponse>>builder()
-                .result(reactionService.getUserReactionByType(postId, type))
+                .result(reactionService.getUserReactionByType(postId, type, page, size))
                 .build();
     }
 

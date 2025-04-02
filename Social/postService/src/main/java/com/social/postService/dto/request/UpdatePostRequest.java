@@ -18,4 +18,6 @@ public class UpdatePostRequest {
     Boolean isPrivate;
     String mediaType;
     List<String> tags;
+    Integer countLikes;
+    Integer countComments;
 }

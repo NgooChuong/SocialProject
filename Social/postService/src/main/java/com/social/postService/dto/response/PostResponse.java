@@ -17,4 +17,6 @@ public class PostResponse {
     List<String> tags;
     List<String> pics;
     UserResponse user;
+    Integer countLikes;
+    Integer countComments;
 }

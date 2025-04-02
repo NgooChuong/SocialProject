@@ -12,15 +12,14 @@ import com.social.postService.exception.AppException;
 import com.social.postService.exception.ErrorCode;
 import com.social.postService.mapper.PostMapper;
 import com.social.postService.repository.*;
-import com.social.postService.repository.httpClient.ProfileClient;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -39,11 +38,12 @@ import java.util.concurrent.ExecutionException;
 public class PostService {
     PostRepository postRepository;
     TagRepository tagRepository;
-    UserRepository userRepository;
     PictureRepository pictureRepository;
     Cloudinary cloudinary;
-    ProfileClient profileClient;
+    CommonService commonService;
     UserPostInteractionRepository userPostInteractionRepository;
+    CommentRepository commentRepository;
+
 
     private void storeTagsNonAvailable(List<String> tags) {
         if (tags.isEmpty()) return;
@@ -88,18 +88,18 @@ public class PostService {
         return uploadedPics.isEmpty() ? Collections.emptyList() : uploadedPics;
     }
 
-    private User createInstanceUser() { // current user
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !(authentication.getPrincipal() instanceof Jwt jwt)) {
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
-        }
-        String userId = jwt.getClaimAsString("userId"); // Lấy userId từ claims
-        return userRepository.findById(userId).orElseGet(() -> {
-            String username = jwt.getClaimAsString("sub");
-            String avatar = profileClient.getProfileByUserId(userId).getResult().getAvatar();
-            return userRepository.save(User.builder().id(userId).username(username).avatar(avatar).build());
-        });
-    }
+//    private User createInstanceUser() { // current user
+//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+//        if (authentication == null || !(authentication.getPrincipal() instanceof Jwt jwt)) {
+//            throw new AppException(ErrorCode.UNAUTHENTICATED);
+//        }
+//        String userId = jwt.getClaimAsString("userId"); // Lấy userId từ claims
+//        return userRepository.findById(userId).orElseGet(() -> {
+//            String username = jwt.getClaimAsString("sub");
+//            String avatar = profileClient.getProfileByUserId(userId).getResult().getAvatar();
+//            return userRepository.save(User.builder().id(userId).username(username).avatar(avatar).build());
+//        });
+//    }
 
     public PostResponse store(CreatePostRequest createPostRequest) {
         List<String> requestedTags = Optional.ofNullable(createPostRequest.getTags())
@@ -116,8 +116,8 @@ public class PostService {
             List<Tag> newTagsList = tagsFuture.get();
             List<Picture> pictures = picsFuture.get();
 
-            Post newPost =Post.builder()
-                    .user(createInstanceUser())
+            Post newPost = Post.builder()
+                    .user(commonService.createInstanceUser())
                     .title(createPostRequest.getTitle())
                     .content(createPostRequest.getContent())
                     .isPrivate(createPostRequest.getIsPrivate())
@@ -130,8 +130,10 @@ public class PostService {
                 pictures.forEach(pic -> pic.setPost(newPost));
                 pictureRepository.saveAll(pictures);
             }
-
-            return PostMapper.INSTANCE.toPostResponse(postRepository.save(newPost));
+            PostResponse p = PostMapper.INSTANCE.toPostResponse(postRepository.save(newPost));
+            p.setCountLikes(0);
+            p.setCountComments(0);
+            return p;
         } catch (InterruptedException | ExecutionException e) {
             log.error("Error while processing Post creation", e);
             throw new AppException(ErrorCode.THREAD_ERROR);
@@ -183,6 +185,41 @@ public class PostService {
         pictures.forEach(this::deletePicInCloud);
     }
 
+    private Integer getNumberOfComments (List<UserPostInteraction> us) {
+        return us.stream()
+                .flatMap(u -> {
+                    List<Comment> comments = commentRepository.findByUserPostInteraction(u).get();
+                    return comments.stream();
+                })
+                .toList().size();
+    }
+
+
+
+    public List<PostResponse> list ( int page, int size) {
+        User user = commonService.createInstanceUser();
+        Pageable p = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        List<Post> posts = postRepository.findByUserId(user.getId(), p).stream().toList();
+        List<PostResponse> postResponses = posts.stream().map(PostMapper.INSTANCE::toPostResponse).toList();
+        for (int i = 0; i< postResponses.size(); i++) {
+            List<UserPostInteraction> us = userPostInteractionRepository.findByPost(posts.get(i)).orElse(Collections.emptyList())
+                    .stream().filter(u -> Objects.nonNull(u.getReaction())).toList();
+            postResponses.get(i).setCountLikes(us.size());
+            postResponses.get(i).setCountComments(getNumberOfComments(us));
+        }
+        return postResponses;
+    }
+
+    public PostResponse retrieve(String postId) {
+        Post post = postRepository.findById(postId).orElseThrow(() -> new AppException(ErrorCode.POST_NOT_EXISTED));
+        PostResponse p =  PostMapper.INSTANCE.toPostResponse(post);
+        List<UserPostInteraction> us = userPostInteractionRepository.findByPost(post).orElse(Collections.emptyList())
+                .stream().filter(u -> Objects.nonNull(u.getReaction())).toList();
+        p.setCountLikes(us.size());
+        p.setCountComments(getNumberOfComments(us));
+        return p;
+    }
+
     public PostResponse update(String postId, UpdatePostRequest updatePostRequest) {
         // Tìm bài viết hoặc ném lỗi nếu không tồn tại
         Post post = postRepository.findById(postId)
@@ -212,19 +249,28 @@ public class PostService {
             throw new AppException(ErrorCode.UPDATE_ERROR);
         }
         // Lưu và trả về kết quả
-        return PostMapper.INSTANCE.toPostResponse(postRepository.save(post));
+        PostResponse p = PostMapper.INSTANCE.toPostResponse(postRepository.save(post));
+        List<UserPostInteraction> us = userPostInteractionRepository.findByPost(post).orElseGet(() -> {
+            p.setCountComments(0);
+            p.setCountLikes(0);
+            return Collections.emptyList();
+        }).stream().filter(u -> Objects.nonNull(u.getReaction())).toList();
+        if (us.isEmpty()) return p;
+
+        p.setCountLikes(us.size());
+        p.setCountComments(this.getNumberOfComments(us));
+        return p;
     }
 
     public void delete(String postId) {
-        User user = createInstanceUser();
+        User user = commonService.createInstanceUser();
         Post p = postRepository.findById(postId).orElseThrow(() -> new AppException(ErrorCode.POST_NOT_EXISTED));
         if (!p.getUser().getId().equals(user.getId())) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
         try {
             postRepository.deleteById(postId);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new AppException(ErrorCode.DELETE_ERROR);
         }
     }

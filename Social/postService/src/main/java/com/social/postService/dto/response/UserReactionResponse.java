@@ -1,6 +1,5 @@
 package com.social.postService.dto.response;
 
-import com.social.postService.entity.User;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 

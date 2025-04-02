@@ -20,15 +20,15 @@ public class Post extends Base {
     MediaType mediaType;
 
     @ManyToOne
-    @ToString.Exclude // ⚠️ Tránh vòng lặp vô hạn
+    @ToString.Exclude // Tránh vòng lặp vô hạn
     @JoinColumn(name="userId")
     User user;
 
-    @ToString.Exclude // ⚠️ Tránh vòng lặp vô hạn
+    @ToString.Exclude // ️ Tránh vòng lặp vô hạn
     @OneToMany(mappedBy = "post", cascade = CascadeType.REMOVE)
     List<UserPostInteraction> userExpresses;
 
-    @ToString.Exclude // ⚠️ Tránh vòng lặp vô hạn
+    @ToString.Exclude //  Tránh vòng lặp vô hạn
     @ManyToMany
     @JoinTable(
             name = "post_tag",

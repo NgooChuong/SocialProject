@@ -1,7 +1,6 @@
 package com.social.postService.entity;
 
 import com.social.postService.enums.ReactionType;
-import com.social.postService.service.ReactionService;
 import jakarta.persistence.*;
 import lombok.*;
 

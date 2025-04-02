@@ -1,7 +1,6 @@
 package com.social.postService.mapper;
 
 import com.social.postService.dto.response.UserReactionResponse;
-import com.social.postService.dto.response.UserResponse;
 import com.social.postService.entity.Reaction;
 import com.social.postService.entity.UserPostInteraction;
 import org.mapstruct.Mapper;

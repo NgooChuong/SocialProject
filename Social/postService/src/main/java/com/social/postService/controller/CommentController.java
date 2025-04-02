@@ -2,14 +2,15 @@ package com.social.postService.controller;
 
 import com.social.postService.dto.request.*;
 import com.social.postService.dto.response.CommentResponse;
-import com.social.postService.dto.response.PostDetailResponse;
-import com.social.postService.dto.response.PostResponse;
-import jakarta.validation.Valid;
+import com.social.postService.service.CommentService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,21 +21,39 @@ import java.util.List;
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class CommentController {
+    CommentService commentService;
+    SimpMessagingTemplate messagingTemplate;
+
     @GetMapping("/{postId}")
-    public ApiResponse<?> getCommentInPost(@PathVariable String postId) {
-        return null;
+    public ApiResponse<List<CommentResponse>> getCommentInPost
+            (@PathVariable String postId,
+            @RequestParam(defaultValue = "0") int page,
+             @RequestParam(defaultValue = "10") int size) {
+        return ApiResponse.<List<CommentResponse>>builder()
+                .result(commentService.list(postId, page, size))
+                .build();
     }
 
-    @PostMapping(value= "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ApiResponse<CommentResponse> createComment(@ModelAttribute @Valid CreateCommentRequest createCommentRequest) {
-        return null;
+//        @PostMapping(value = "/create")
+    @MessageMapping("/chat.sendComment")
+    public void createComment(@Payload CreateCommentRequest createCommentRequest) {
+        CommentResponse message =  commentService.store(createCommentRequest);
+        String destination = "/topic/post" + createCommentRequest.getPostId();
+        messagingTemplate.convertAndSend(destination, message);
     }
-    @PutMapping(value= "/update/{cmt_id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ApiResponse<CommentResponse> updatePost(@PathVariable("cmt_id") String id, @ModelAttribute @Valid UpdateCommentRequest updateCommentRequest) {
-        return null;
+
+    @PutMapping(value = "/update/{cmt_id}")
+    public ApiResponse<CommentResponse> updateComment(@PathVariable("cmt_id") String id, @RequestBody String newComment) {
+        return ApiResponse.<CommentResponse>builder()
+                .result(commentService.update(id, newComment))
+                .build();
     }
 
     @DeleteMapping(value = "/delete/{cmt_id}")
-    public void deletePost(@PathVariable("cmt_id") String id) {
+    public ApiResponse<?> deletePost(@PathVariable("cmt_id") String id) {
+        commentService.delete(id);
+        return ApiResponse.<CommentResponse>builder()
+                .code(HttpStatus.NO_CONTENT.value())
+                .build();
     }
 }

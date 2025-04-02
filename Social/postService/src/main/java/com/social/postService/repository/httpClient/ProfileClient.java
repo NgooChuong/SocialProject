@@ -7,7 +7,6 @@ import org.springframework.cloud.loadbalancer.annotation.LoadBalancerClient;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
 
 @LoadBalancerClient(name="PROFILE")
 @FeignClient(name="PROFILE", path = "/profile/users", configuration = AuthenticationRequestInterceptor.class)

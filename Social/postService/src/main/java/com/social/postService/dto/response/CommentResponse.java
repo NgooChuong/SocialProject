@@ -5,8 +5,10 @@ import lombok.experimental.FieldDefaults;
 
 @Data
 @NoArgsConstructor
-//@AllArgsConstructor
+@AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CommentResponse {
+    UserResponse user;
+    String content;
 }

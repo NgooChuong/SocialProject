@@ -22,7 +22,7 @@ public class SecurityConfig {
 
     private final String[] SWAGGER_ENDPOINTS = {"/swagger-ui/**",
             "/v3/api-docs/**", "/swagger-resources/**",
-            "/webjars/**"};
+            "/webjars/**", "/**"};
 
     @Autowired
     private CustomJwtDecoder customJwtDecoder;

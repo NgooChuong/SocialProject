@@ -26,7 +26,10 @@ public enum ErrorCode {
     CLOUDINARY_DELETE_FAILED(1016, "Cloudinary delete failed", HttpStatus.INTERNAL_SERVER_ERROR),
     UPDATE_ERROR(1017, "Update is error", HttpStatus.INTERNAL_SERVER_ERROR),
     DELETE_ERROR(1018, "Delete is error", HttpStatus.INTERNAL_SERVER_ERROR),
-
+    COMMENT_CREATION_FAILED (1019, "Comment creation failed", HttpStatus.INTERNAL_SERVER_ERROR),
+    COMMENT_NOT_EXISTED(1020, "Comment not existed", HttpStatus.NOT_FOUND),
+    COMMENT_UPDATE_FAILED (1021, "Comment update failed", HttpStatus.INTERNAL_SERVER_ERROR),
+    COMMENT_DELETE_FAILED (1022, "Comment delete failed", HttpStatus.INTERNAL_SERVER_ERROR),
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

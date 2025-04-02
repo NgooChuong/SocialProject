@@ -18,17 +18,19 @@ public abstract class   Base {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     String id;
-    Timestamp created_at;
-    Timestamp updated_at;
+    @Column(name = "created_at")
+    Timestamp createdAt;
+    @Column(name = "update_at")
+    Timestamp updatedAt;
 
     @PrePersist
     public void prePersist() {
-        this.created_at = new Timestamp(System.currentTimeMillis());
-        this.updated_at = new Timestamp(System.currentTimeMillis());
+        this.createdAt = new Timestamp(System.currentTimeMillis());
+        this.updatedAt = new Timestamp(System.currentTimeMillis());
     }
 
     @PreUpdate
     public void preUpdate() {
-        this.updated_at = new Timestamp(System.currentTimeMillis());
+        this.createdAt = new Timestamp(System.currentTimeMillis());
     }
 }

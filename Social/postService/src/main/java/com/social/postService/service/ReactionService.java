@@ -10,20 +10,15 @@ import com.social.postService.enums.ReactionType;
 import com.social.postService.exception.AppException;
 import com.social.postService.exception.ErrorCode;
 import com.social.postService.mapper.UserPostReactionMapper;
-import com.social.postService.mapper.UserPostReactionMapperImpl;
 import com.social.postService.repository.PostRepository;
 import com.social.postService.repository.ReactionRepository;
 import com.social.postService.repository.UserPostInteractionRepository;
-import com.social.postService.repository.UserRepository;
-import com.social.postService.repository.httpClient.ProfileClient;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -39,10 +34,8 @@ import java.util.Optional;
 public class ReactionService {
     ReactionRepository reactionRepository;
     PostRepository postRepository;
-    UserRepository userRepository;
     UserPostInteractionRepository userPostInteractionRepository;
-    ProfileClient profileClient;
-
+    CommonService commonService;
 
     private Post getPost(String postId) {
         return postRepository.findById(postId)
@@ -50,23 +43,6 @@ public class ReactionService {
                     log.warn("Post with id {} not found", postId);
                     return new AppException(ErrorCode.POST_NOT_EXISTED);
                 });
-    }
-
-    private User getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !(authentication.getPrincipal() instanceof Jwt jwt)) {
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
-        }
-        String userId = jwt.getClaimAsString("userId"); // Lấy userId từ claims
-        return userRepository.findById(userId).orElseGet(() -> {
-            String username = jwt.getClaimAsString("sub");
-            try {
-                String avatar = profileClient.getProfileByUserId(userId).getResult().getAvatar();
-                return userRepository.save(User.builder().id(userId).username(username).avatar(avatar).build());
-            } catch (Exception e) {
-                throw new AppException(ErrorCode.NOT_FIND_SERVER);
-            }
-        });
     }
 
     public boolean isInReactionTypeEnum(String value) {
@@ -98,7 +74,7 @@ public class ReactionService {
         }
     }
 
-    public List<UserReactionResponse> getUserReactionByType(String postId, String type) {
+    public List<UserReactionResponse> getUserReactionByType(String postId, String type, int page, int size) {
         if (type == null || type.trim().isEmpty()) {
             throw new AppException(ErrorCode.INVALID_REACTION_TYPE);
         }
@@ -106,19 +82,20 @@ public class ReactionService {
         if (p == null) {
             throw new AppException(ErrorCode.POST_NOT_EXISTED);
         }
-        List<UserPostInteraction> uPI;
+        Page<UserPostInteraction> uPI;
+        Pageable pageable =  PageRequest.of(page, size, Sort.by("id").descending());
         String trimmedType = type.trim();
         if (trimmedType.equalsIgnoreCase("ALL")) {
-            uPI = userPostInteractionRepository.findByPost(p).orElse(Collections.emptyList());
+            uPI = userPostInteractionRepository.findByPost(p,pageable);
         } else if (isInReactionTypeEnum(trimmedType)) {
             Reaction r = getOrcreateReaction(trimmedType);
-            uPI = userPostInteractionRepository.findByPostAndReactionId(p, r.getId())
-                    .orElse(Collections.emptyList());
+            uPI = userPostInteractionRepository.findByPostAndReactionId(p, r.getId(), pageable);
         } else {
             throw new AppException(ErrorCode.INTERACTION_NOT_FOUND);
         }
 
-        return uPI.stream()
+        return uPI.getContent().stream()
+                .filter(u ->  Objects.nonNull(u.getReaction()))
                 .map(UserPostReactionMapper.INSTANCE::toUserReaction)
                 .toList();
     }
@@ -127,7 +104,7 @@ public class ReactionService {
         Objects.requireNonNull(updateReactionRequest, "UpdateReactionRequest must not be null");
         try {
             Post post = getPost(postId);
-            User currentUser = getCurrentUser();
+            User currentUser = commonService.createInstanceUser();
             Reaction reaction = getOrcreateReaction(updateReactionRequest.getIconName());
 
             // Tìm tương tác hiện tại
@@ -163,7 +140,7 @@ public class ReactionService {
     public Boolean delete(String postId) {
         // Lấy người dùng hiện tại
         try {
-            User currentUser = getCurrentUser();
+            User currentUser = commonService.createInstanceUser();
 
             // Lấy Post từ postId
             Post post = postRepository.findById(postId)

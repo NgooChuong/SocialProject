@@ -35,3 +35,9 @@ eureka:
   instance:
     hostname: localhost
 #    prefer-ip-address: true # Sử dụng IP thay vì hostname
+
+
+logging:
+  level:
+    org.springframework.web.socket: DEBUG
+    org.springframework.messaging: DEBUG
