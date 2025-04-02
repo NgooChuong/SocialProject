@@ -4,6 +4,8 @@ import com.social.postService.dto.request.ApiResponse;
 import com.social.postService.dto.request.UpdateReactionRequest;
 import com.social.postService.dto.response.UserReactionResponse;
 import com.social.postService.service.ReactionService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +24,14 @@ import java.util.List;
 public class ReactionController {
     ReactionService reactionService;
     // like là phan ung cap nhat post lien
-
+    @Operation(summary = "get reaction in post by type")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "1012", description = "post not existed"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "1013", description = "Invalid reaction type"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "1000", description = "Success"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "1015", description = "Interaction not found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "9999", description = "Server uncategorized error"),
+    })
     @GetMapping("/{postId}")
     public ApiResponse<List<UserReactionResponse>> getReactionInPost(
             @PathVariable("postId") String postId,
@@ -34,15 +43,25 @@ public class ReactionController {
                 .result(reactionService.getUserReactionByType(postId, type, page, size))
                 .build();
     }
-
-    @PostMapping(value = "/update/{post_id}")
+    @Operation(summary = "create reaction in post", description = "True when reaction is reacted but False isn't")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "1000", description = "Success"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "9999", description = "Server uncategorized error"),
+    })
+    @PostMapping(value = "/create/{post_id}")
     public ApiResponse<?> updateLikePost(@PathVariable("post_id") String id,
                                          @ModelAttribute @Valid UpdateReactionRequest updateReactionRequest) {
         Boolean res = reactionService.storeOrUpdate(id, updateReactionRequest);
         int code = res ? HttpStatus.OK.value() : HttpStatus.INTERNAL_SERVER_ERROR.value();
         return ApiResponse.<Boolean>builder().result(res).code(code).build();
     }
-
+    @Operation(summary = "delete reaction in post", description = "True when reaction is deleted but False isn't")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "1012", description = "Post not existed"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "1015", description = "Interaction not found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "1000", description = "Success"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "9999", description = "Server uncategorized error"),
+    })
     @DeleteMapping("/delete/{post_id}")
     public ApiResponse<Boolean> deleteLikePost(@PathVariable("post_id") String id) {
         return ApiResponse.<Boolean>builder().result(reactionService.delete(id)).build();

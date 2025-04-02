@@ -29,6 +29,11 @@ public class PostController {
 
     PostService postService;
 
+    @Operation(summary = "Get all my posts")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "1006", description = "Unauthenticated"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "1000", description = "Success")
+    })
     @GetMapping("/MyPosts")
     public ApiResponse<List<PostResponse>> getMyPosts(
             @RequestParam(defaultValue = "0") int page,
@@ -37,26 +42,50 @@ public class PostController {
         return ApiResponse.<List<PostResponse>>builder().result(postService.list(page, size)).build();
     }
 
-    @Operation(summary = "Get  my post by ID", description = "Retrieve a post by its ID")
+    @Operation(summary = "Get my post by ID", description = "Retrieve a post by its ID")
     @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid input data"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Server error")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "1012", description = "POST_NOT_EXISTED"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "1000", description = "Success")
     })
     @GetMapping("/MyPost/{post_id}")
     public ApiResponse<PostResponse> getMyPostDetail(@PathVariable("post_id") String id) {
         return ApiResponse.<PostResponse>builder().result(postService.retrieve(id)).build();
     }
 
+    @Operation(summary = "Create post")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "1011", description = "Server error - Thread error"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "1000", description = "Success"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "9999", description = "Server uncategorized error"),
+
+    })
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ApiResponse<PostResponse> createPost(@ModelAttribute @Valid CreatePostRequest createPostRequest) {
         return ApiResponse.<PostResponse>builder().result(postService.store(createPostRequest)).build();
     }
+    @Operation(summary = "Update post")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "1012", description = "post not existed"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "1000", description = "Success"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "1017", description = "Update is error"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "9999", description = "Server uncategorized error"),
 
+    })
     @PutMapping(value = "/update/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ApiResponse<PostResponse> updatePost(@PathVariable("id") String id, @ModelAttribute @Valid UpdatePostRequest updatePostRequest) {
         return ApiResponse.<PostResponse>builder().result(postService.update(id, updatePostRequest)).build();
     }
 
+    @Operation(summary = "Delete post")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "1012", description = "Post not existed"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "1000", description = "Success"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "1018", description = "Delete is error"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "1007", description = "Unauthorized"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "9999", description = "Server uncategorized error"),
+
+
+    })
     @DeleteMapping(value = "/delete/{id}")
     public ApiResponse<?> deletePost(@PathVariable("id") String id) {
         postService.delete(id);
