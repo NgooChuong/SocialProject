@@ -29,7 +29,7 @@ public class UserController {
     @PostMapping(value = "/registration",consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
             produces = {MediaType.APPLICATION_JSON_VALUE})
     ApiResponse<UserResponse> createUser(@ModelAttribute @Valid UserCreationRequest request){
-        System.out.println("request");
+        log.info("request:{}", request);
         return ApiResponse.<UserResponse>builder()
                 .result(userService.createUser(request))
                 .build();

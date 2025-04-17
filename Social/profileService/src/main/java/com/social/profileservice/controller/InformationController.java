@@ -3,6 +3,7 @@ package com.social.profileservice.controller;
 import com.social.profileservice.dto.request.ApiResponse;
 import com.social.profileservice.dto.request.InformationCreateRequest;
 import com.social.profileservice.dto.request.InformationRequest;
+import com.social.profileservice.dto.request.InformationUpdateRequest;
 import com.social.profileservice.dto.response.InformationResponse;
 import com.social.profileservice.service.InformationService;
 import lombok.AccessLevel;
@@ -49,7 +50,7 @@ public class InformationController {
 
     @PutMapping(value = "/{profileId}",consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
             produces = {MediaType.APPLICATION_JSON_VALUE})
-    ApiResponse<InformationResponse> updateUser(@PathVariable String profileId, @ModelAttribute InformationCreateRequest request){
+    ApiResponse<InformationResponse> updateUser(@PathVariable String profileId, @ModelAttribute InformationUpdateRequest request){
         return ApiResponse.<InformationResponse>builder()
                 .result(informationService.updateUser(profileId, request))
                 .build();

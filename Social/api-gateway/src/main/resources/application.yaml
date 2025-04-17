@@ -30,6 +30,24 @@ spring:
           filters:
 #          - StripPrefix=
 
+        - id: friend_service
+          uri: lb://FRIEND
+          predicates:
+            - Path=/friend/**
+          filters:
+
+        - id: notification_service
+          uri: lb://NOTI
+          predicates:
+            - Path=/notification/**
+          filters:
+
+        - id: post_service
+          uri: lb://POST
+          predicates:
+            - Path=/post/**
+          filters:
+
 eureka:
   client:
     serviceUrl:

@@ -15,5 +15,5 @@ public class ClientCreationRequest {
     String firstName;
     String lastName;
     Date dob;
-    MultipartFile file;
+    String avatar;
 }

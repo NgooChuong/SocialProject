@@ -1,5 +1,7 @@
 package com.social.identityservice.configuration;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.social.identityservice.entity.User;
 import com.social.identityservice.enums.Role;
 import com.social.identityservice.enums.StatusAccount;
@@ -22,6 +24,14 @@ import java.util.Date;
 public class ApplicationInitConfig {
 
     PasswordEncoder passwordEncoder;
+    @Bean
+    public Cloudinary cloudinary() {
+        return new Cloudinary(ObjectUtils.asMap(
+                "cloud_name", "depgwkadm",
+                "api_key", "952231983342175",
+                "api_secret", "Q2zQxgULDrl4SCt4-Qe-xg-buUM",
+                "secure", true));
+    }
 
     @Bean
     ApplicationRunner applicationRunner(UserRepository userRepository){

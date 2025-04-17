@@ -63,11 +63,10 @@ public class ReactionService {
             Optional<Reaction> optionalReaction = reactionRepository.findByIconName(reactionType);
             if (optionalReaction.isPresent()) {
                 return optionalReaction.get();
-            }
-            ;
-            return Reaction.builder()
+            };
+            return reactionRepository.save(Reaction.builder()
                     .iconName(reactionType)
-                    .build();
+                    .build());
         } catch (IllegalArgumentException e) {
             log.warn("Invalid reaction type: {}", iconName);
             throw new AppException(ErrorCode.INVALID_REACTION_TYPE);

@@ -4,6 +4,7 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.social.profileservice.dto.request.InformationCreateRequest;
 import com.social.profileservice.dto.request.InformationRequest;
+import com.social.profileservice.dto.request.InformationUpdateRequest;
 import com.social.profileservice.dto.response.InformationResponse;
 import com.social.profileservice.entity.Information;
 import com.social.profileservice.exception.AppException;
@@ -29,17 +30,7 @@ public class InformationService {
     Cloudinary cloudinary;
 
     public InformationResponse createProfile(InformationCreateRequest request) {
-        if (!(request.getFile() == null)) {
-            try {
-                Map res = this.cloudinary.uploader().upload(request.getFile().getBytes(),
-                        ObjectUtils.asMap("resource_type", "auto"));
-
-                request.setAvatar(res.get("secure_url").toString());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        // mapper k dc do cái request k có avatar
+        log.info("Create Profile:{}", request.getAvatar());
         Information userProfile = informationMapper.toInformation(request);
         informationRepository.save(userProfile);
         return informationMapper.toInformationResponse(userProfile);
@@ -58,7 +49,7 @@ public class InformationService {
         return informationMapper.toInformationResponse(userProfile);
     }
 
-    public InformationResponse updateUser(String userId, InformationCreateRequest request) {// dang loi tu nhien tao user moi
+    public InformationResponse updateUser(String userId, InformationUpdateRequest request) {// dang loi tu nhien tao user moi
         Information user = informationRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         if (!(request.getFile() == null)) {

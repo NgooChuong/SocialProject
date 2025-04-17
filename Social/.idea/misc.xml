@@ -10,6 +10,7 @@
         <option value="$PROJECT_DIR$/profileService/pom.xml" />
         <option value="$PROJECT_DIR$/eureka-server/pom.xml" />
         <option value="$PROJECT_DIR$/friendService/pom.xml" />
+        <option value="$PROJECT_DIR$/notificationService/pom.xml" />
       </list>
     </option>
   </component>

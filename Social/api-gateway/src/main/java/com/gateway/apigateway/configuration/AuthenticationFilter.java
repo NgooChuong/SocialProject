@@ -5,13 +5,11 @@ import com.gateway.apigateway.dto.request.IntrospectRequest;
 import com.gateway.apigateway.service.IdentityService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -24,11 +22,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import reactor.netty.http.server.HttpServerResponse;
 
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 @Component
 @Slf4j
@@ -54,13 +52,14 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
 
         // Get token from authorization header
         HttpHeaders headers = exchange.getRequest().getHeaders();
+        log.info("-----------: {}", headers);
         List<String> authHeader = headers.get(HttpHeaders.AUTHORIZATION);
         if (CollectionUtils.isEmpty(authHeader))
             return unauthenticated(exchange.getResponse());
         log.info("Auth header: {}", authHeader);
         String token = authHeader.getFirst();
         log.info("Token: {}", token);
-        String refreshToken = authHeader.get(1);
+        String refreshToken = Objects.requireNonNull(headers.get("RefreshToken")).getFirst();
         log.info("RefreshToken: {}", refreshToken);
         IntrospectRequest request = IntrospectRequest.builder().token(token).refreshToken(refreshToken).build();
         return identityService.introspect(request).flatMap(introspectResponse -> {

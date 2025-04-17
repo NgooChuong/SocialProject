@@ -15,7 +15,6 @@ import java.util.Set;
 public class UserResponse {
     String userId;
     String username;
-    String password;
     String phone;
     Date createAt;
     Date loginAt;

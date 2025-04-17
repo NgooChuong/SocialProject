@@ -18,3 +18,5 @@ services:
 volumes:
   social_volume_identity:
     external: true  # Đảm bảo rằng volume này đã tồn tại trên Docker
+
+

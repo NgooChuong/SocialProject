@@ -2,21 +2,30 @@ package com.social.postService.service;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import com.social.postService.dto.request.ApiResponse;
 import com.social.postService.dto.request.CreatePostRequest;
 import com.social.postService.dto.request.UpdatePostRequest;
+import com.social.postService.dto.request.message.NotificationPostMessage;
+import com.social.postService.dto.request.message.UserNotiMessage;
 import com.social.postService.dto.response.InformationResponse;
 import com.social.postService.dto.response.PostResponse;
+import com.social.postService.dto.response.UserResponse;
 import com.social.postService.entity.*;
 import com.social.postService.enums.MediaType;
 import com.social.postService.exception.AppException;
 import com.social.postService.exception.ErrorCode;
 import com.social.postService.mapper.PostMapper;
+import com.social.postService.mapper.UserMapper;
 import com.social.postService.repository.*;
+import com.social.postService.repository.httpClient.FriendClient;
+import com.social.postService.service.messageproducer.KafkaProducerService;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -24,26 +33,43 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.IntStream;
 
 
 @Service
 @Transactional
-@RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+
 @Slf4j
 public class PostService {
-    PostRepository postRepository;
-    TagRepository tagRepository;
-    PictureRepository pictureRepository;
-    Cloudinary cloudinary;
-    CommonService commonService;
-    UserPostInteractionRepository userPostInteractionRepository;
-    CommentRepository commentRepository;
+    private final PostRepository postRepository;
+    private final TagRepository tagRepository;
+    private final PictureRepository pictureRepository;
+    private final Cloudinary cloudinary;
+    private final CommonService commonService;
+    private final UserPostInteractionRepository userPostInteractionRepository;
+    private final CommentRepository commentRepository;
+    private final FriendClient friendClient;
+    private final KafkaProducerService kafkaProducerService;
 
+    @Value("${kafka.topic}")
+    private String topic;
+
+    public PostService(PostRepository postRepository, TagRepository tagRepository, PictureRepository pictureRepository, Cloudinary cloudinary, CommonService commonService, UserPostInteractionRepository userPostInteractionRepository, CommentRepository commentRepository, FriendClient friendClient, KafkaProducerService kafkaProducerService) {
+        this.postRepository = postRepository;
+        this.tagRepository = tagRepository;
+        this.pictureRepository = pictureRepository;
+        this.cloudinary = cloudinary;
+        this.commonService = commonService;
+        this.userPostInteractionRepository = userPostInteractionRepository;
+        this.commentRepository = commentRepository;
+        this.friendClient = friendClient;
+        this.kafkaProducerService = kafkaProducerService;
+    }
 
     private void storeTagsNonAvailable(List<String> tags) {
         if (tags.isEmpty()) return;
@@ -88,7 +114,7 @@ public class PostService {
         return uploadedPics.isEmpty() ? Collections.emptyList() : uploadedPics;
     }
 
-//    private User createInstanceUser() { // current user
+    //    private User createInstanceUser() { // current user
 //        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 //        if (authentication == null || !(authentication.getPrincipal() instanceof Jwt jwt)) {
 //            throw new AppException(ErrorCode.UNAUTHENTICATED);
@@ -100,6 +126,67 @@ public class PostService {
 //            return userRepository.save(User.builder().id(userId).username(username).avatar(avatar).build());
 //        });
 //    }
+    private UserNotiMessage createUserMessage(User user) {
+        return UserNotiMessage.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .avatar(user.getAvatar()).build();
+    }
+
+    private NotificationPostMessage createNotificationFriendMessage(User user, User friend, String postId) {
+        UserNotiMessage sender = createUserMessage(user);
+        UserNotiMessage receiver = createUserMessage(friend);
+        return NotificationPostMessage.builder()
+                .sender(sender)
+                .receiver(receiver)
+                .postId(postId)
+                .createdAt(new Timestamp(System.currentTimeMillis()))
+                .build();
+    }
+
+    private List<UserResponse> fetchAllFriendsAsync(String type) {
+        int size = 100;
+        ApiResponse<Page<UserResponse>> firstPageResponse = friendClient.getFriends(0, size, type);
+        int totalPages = firstPageResponse.getResult().getTotalPages();
+
+        // Tạo danh sách CompletableFuture cho từng page
+        List<CompletableFuture<List<UserResponse>>> futures = new ArrayList<>();
+        futures.add(CompletableFuture.completedFuture(firstPageResponse.getResult().getContent())); // Page 0 đã có
+
+        // Gọi các page còn lại bất đồng bộ
+        IntStream.range(1, totalPages)
+                .forEach(page -> {
+                    CompletableFuture<List<UserResponse>> future = CompletableFuture.supplyAsync(() -> {
+                        try {
+                            ApiResponse<Page<UserResponse>> response = friendClient.getFriends(page, size, type);
+                            return response.getResult().getContent();
+                        } catch (Exception e) {
+                            log.error("Failed to fetch page {}: {}", page, e.getMessage());
+                            throw new RuntimeException("Error fetching page " + page, e);
+                        }
+                    });
+                    futures.add(future);
+                });
+
+        // Chờ tất cả future hoàn tất và gộp kết quả
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                .thenApply(v -> futures.stream()
+                        .map(CompletableFuture::join)
+                        .flatMap(List::stream)
+                        .toList())
+                .join();
+    }
+
+    private void sendMessagesPostToFriends (String postId) {
+        List<UserResponse> listFriends = fetchAllFriendsAsync("ACCEPTED");
+        log.info("list: {}", listFriends);
+        User sender = commonService.createInstanceUser();
+        listFriends.forEach(v -> {
+            User receiver = UserMapper.INSTANCE.toUser(v);
+            NotificationPostMessage noti = createNotificationFriendMessage(sender, receiver, postId);
+            kafkaProducerService.sendPostMessage(topic,noti);
+        });
+    }
 
     public PostResponse store(CreatePostRequest createPostRequest) {
         List<String> requestedTags = Optional.ofNullable(createPostRequest.getTags())
@@ -130,7 +217,10 @@ public class PostService {
                 pictures.forEach(pic -> pic.setPost(newPost));
                 pictureRepository.saveAll(pictures);
             }
-            PostResponse p = PostMapper.INSTANCE.toPostResponse(postRepository.save(newPost));
+
+            Post savedPost = postRepository.save(newPost);
+            sendMessagesPostToFriends(savedPost.getId());
+            PostResponse p = PostMapper.INSTANCE.toPostResponse(savedPost);
             p.setCountLikes(0);
             p.setCountComments(0);
             return p;
@@ -185,7 +275,7 @@ public class PostService {
         pictures.forEach(this::deletePicInCloud);
     }
 
-    private Integer getNumberOfComments (List<UserPostInteraction> us) {
+    private Integer getNumberOfComments(List<UserPostInteraction> us) {
         return us.stream()
                 .flatMap(u -> {
                     List<Comment> comments = commentRepository.findByUserPostInteraction(u).get();
@@ -195,13 +285,12 @@ public class PostService {
     }
 
 
-
-    public List<PostResponse> list ( int page, int size) {
+    public List<PostResponse> list(int page, int size) {
         User user = commonService.createInstanceUser();
         Pageable p = PageRequest.of(page, size, Sort.by("createdAt").descending());
         List<Post> posts = postRepository.findByUserId(user.getId(), p).stream().toList();
         List<PostResponse> postResponses = posts.stream().map(PostMapper.INSTANCE::toPostResponse).toList();
-        for (int i = 0; i< postResponses.size(); i++) {
+        for (int i = 0; i < postResponses.size(); i++) {
             List<UserPostInteraction> us = userPostInteractionRepository.findByPost(posts.get(i)).orElse(Collections.emptyList())
                     .stream().filter(u -> Objects.nonNull(u.getReaction())).toList();
             postResponses.get(i).setCountLikes(us.size());
@@ -212,7 +301,7 @@ public class PostService {
 
     public PostResponse retrieve(String postId) {
         Post post = postRepository.findById(postId).orElseThrow(() -> new AppException(ErrorCode.POST_NOT_EXISTED));
-        PostResponse p =  PostMapper.INSTANCE.toPostResponse(post);
+        PostResponse p = PostMapper.INSTANCE.toPostResponse(post);
         List<UserPostInteraction> us = userPostInteractionRepository.findByPost(post).orElse(Collections.emptyList())
                 .stream().filter(u -> Objects.nonNull(u.getReaction())).toList();
         p.setCountLikes(us.size());

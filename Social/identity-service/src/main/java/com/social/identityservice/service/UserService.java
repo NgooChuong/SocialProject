@@ -1,5 +1,7 @@
 package com.social.identityservice.service;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.social.identityservice.dto.request.ClientCreationRequest;
 import com.social.identityservice.dto.request.UserCreationRequest;
 import com.social.identityservice.dto.request.UserUpdateRequest;
@@ -25,9 +27,13 @@ import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -40,6 +46,7 @@ public class UserService {
     PasswordEncoder passwordEncoder;
     UserUnauthenClient userUnauthenClent;
     ClientMapper clientMapper;
+    Cloudinary cloudinary;
     private void validateUserExistence(UserCreationRequest request) {
         // Chỉ kiểm tra khi thuộc tính không null
         if (request.getUsername() != null && userRepository.existsByUsername(request.getUsername())) {
@@ -75,8 +82,11 @@ public class UserService {
     // maxAttempts= 3 is default
     @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 1000),retryFor = FeignException.class)
     void createUserProfile(User user, UserCreationRequest request) throws FeignException {
+        log.info("abc:{}", request.getFile());
+        String avatar = uploadFileToCloudinary(request.getFile());
         ClientCreationRequest clientCreationRequest = clientMapper.toClientCreationRequest(request);
         clientCreationRequest.setUserId(user.getUserId());
+        clientCreationRequest.setAvatar(avatar);
         // Gọi service profile
         try {
             userUnauthenClent.createUser(clientCreationRequest);
@@ -91,11 +101,25 @@ public class UserService {
 ////        userRepository.delete(user);
 //        System.out.println("Recover called with exception: " + e.getClass().getName());
 //    }
+public String uploadFileToCloudinary(MultipartFile file) {
+    if (Objects.nonNull(file)) {
+        try {
+            Map res = this.cloudinary.uploader().upload(file.getBytes(),
+                    ObjectUtils.asMap("resource_type", "auto"));
+
+            return res.get("secure_url").toString();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    return null;
+}
     public UserResponse createUser(UserCreationRequest request){
         validateUserExistence(request); // Kiểm tra tồn tại
         User user = buildUserFromRequest(request); // Tạo user
         // xử lý thêm roll back khi 1 service profile fail
         user = userRepository.save(user);
+        log.info("createUser:{}",request.getFile());
         createUserProfile(user, request); // Tạo profile ở service khác
         return userMapper.toUserResponse(user);
     }

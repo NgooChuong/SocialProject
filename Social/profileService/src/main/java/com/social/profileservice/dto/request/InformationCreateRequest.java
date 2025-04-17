@@ -2,7 +2,6 @@ package com.social.profileservice.dto.request;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Date;
 @Data
@@ -16,5 +15,4 @@ public class InformationCreateRequest {
     String lastName;
     Date dob;
     String avatar;
-    MultipartFile file;
 }
