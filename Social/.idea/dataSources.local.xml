@@ -11,5 +11,20 @@
         </introspection-scope>
       </schema-mapping>
     </data-source>
+    <data-source name="socialuserinformation@localhost" uuid="cedac6af-b8ad-4e30-8959-719c30b63abd">
+      <database-info product="" version="" jdbc-version="" driver-name="" driver-version="" dbms="MYSQL" />
+      <user-name>${PROFILE_DB_USERNAME}</user-name>
+      <schema-mapping />
+    </data-source>
+    <data-source name="social_post@localhost" uuid="3b43b0f6-2a5a-40ce-9b68-f25add76f358">
+      <database-info product="" version="" jdbc-version="" driver-name="" driver-version="" dbms="MYSQL" />
+      <user-name>${POST_DB_USERNAME}</user-name>
+      <schema-mapping />
+    </data-source>
+    <data-source name="social_identity@localhost" uuid="7b8c36f9-05f0-40af-a272-7336772875be">
+      <database-info product="" version="" jdbc-version="" driver-name="" driver-version="" dbms="MYSQL" />
+      <user-name>${IDENTIFY_DB_USERNAME}</user-name>
+      <schema-mapping />
+    </data-source>
   </component>
 </project>

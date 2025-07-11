@@ -38,6 +38,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 
@@ -87,7 +88,7 @@ public class PostService {
     }
 
     private List<Picture> storePicsToCloudinary(List<MultipartFile> Pics) {
-        if (Pics.isEmpty()) return null;
+        if (Pics==null || Pics.isEmpty()) return new ArrayList<>();
         List<CompletableFuture<Picture>> futurePics = Pics.stream().map(pic ->
                 CompletableFuture.supplyAsync(() -> {
                     try {
@@ -290,11 +291,23 @@ public class PostService {
         Pageable p = PageRequest.of(page, size, Sort.by("createdAt").descending());
         List<Post> posts = postRepository.findByUserId(user.getId(), p).stream().toList();
         List<PostResponse> postResponses = posts.stream().map(PostMapper.INSTANCE::toPostResponse).toList();
+        List<UserPostInteraction> interactions = userPostInteractionRepository
+                .findByPostIn(posts)
+                .orElse(Collections.emptyList());
+
+        // Group theo postId để truy cập nhanh
+        Map<String, List<UserPostInteraction>> interactionMap = interactions.stream()
+                .filter(u -> u.getReaction() != null)
+                .collect(Collectors.groupingBy(u -> u.getPost().getId()));
+
+        // Gán count likes/comments vào response
         for (int i = 0; i < postResponses.size(); i++) {
-            List<UserPostInteraction> us = userPostInteractionRepository.findByPost(posts.get(i)).orElse(Collections.emptyList())
-                    .stream().filter(u -> Objects.nonNull(u.getReaction())).toList();
-            postResponses.get(i).setCountLikes(us.size());
-            postResponses.get(i).setCountComments(getNumberOfComments(us));
+            Post post = posts.get(i);
+            PostResponse response = postResponses.get(i);
+            List<UserPostInteraction> us = interactionMap.getOrDefault(post.getId(), Collections.emptyList());
+
+            response.setCountLikes(us.size());
+            response.setCountComments(getNumberOfComments(us));
         }
         return postResponses;
     }
@@ -313,41 +326,90 @@ public class PostService {
         // Tìm bài viết hoặc ném lỗi nếu không tồn tại
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new AppException(ErrorCode.POST_NOT_EXISTED));
-        MediaType mediaType = Objects.isNull(updatePostRequest.getMediaType()) ?
-                post.getMediaType() : MediaType.valueOf(updatePostRequest.getMediaType());
-        // Cập nhật các trường từ UpdatePostRequest
+
+        // Xác định mediaType (giữ lại nếu null)
+        MediaType mediaType = Objects.isNull(updatePostRequest.getMediaType())
+                ? post.getMediaType()
+                : MediaType.valueOf(updatePostRequest.getMediaType());
+
+        // Cập nhật các trường cơ bản
         Optional.ofNullable(updatePostRequest.getTitle()).ifPresent(post::setTitle);
         Optional.ofNullable(updatePostRequest.getContent()).ifPresent(post::setContent);
         Optional.ofNullable(updatePostRequest.getIsPrivate()).ifPresent(post::setIsPrivate);
         Optional.of(mediaType).ifPresent(post::setMediaType);
+
+        // Xử lý tags
         List<String> requestedTags = Optional.ofNullable(updatePostRequest.getTags())
                 .orElse(Collections.emptyList());
         storeTagsNonAvailable(requestedTags);
         List<Tag> tags = tagRepository.findByNameIn(requestedTags);
         Optional.of(tags.isEmpty() ? post.getTags() : tags).ifPresent(post::setTags);
-        // update  hinh
+
+        // Xử lý hình ảnh
         try {
-            List<Picture> pictures = storePicsToCloudinary(updatePostRequest.getPictures());
-            pictureRepository.deleteAll(post.getPics());
-            post.setPics(pictures);
-            if (post.getPics() != null) {
-                post.getPics().forEach(pic -> pic.setPost(post));
+            // 1. Lấy danh sách URL ảnh cũ từ FE muốn giữ lại
+            List<String> oldPictureUrls = Optional.ofNullable(updatePostRequest.getOldPictures())
+                    .orElse(Collections.emptyList());
+
+            // 2. Giữ lại các Picture có URL nằm trong oldPictureUrls
+            List<Picture> picturesToKeep = post.getPics() != null
+                    ? post.getPics().stream()
+                    .filter(p -> oldPictureUrls.contains(p.getUrl()))
+                    .toList()
+                    : new ArrayList<>();
+
+            // 3. Xoá các Picture không cần giữ lại
+            List<Picture> picturesToDelete = post.getPics() != null
+                    ? post.getPics().stream()
+                    .filter(p -> !oldPictureUrls.contains(p.getUrl()))
+                    .collect(Collectors.toList())
+                    : new ArrayList<>();
+            pictureRepository.deleteAll(picturesToDelete);
+
+            // 4. Upload hình mới (an toàn với null)
+            List<MultipartFile> pictures = Optional.ofNullable(updatePostRequest.getPictures())
+                    .orElse(Collections.emptyList());
+            List<Picture> newPictures = storePicsToCloudinary(pictures);
+            newPictures.forEach(pic -> pic.setPost(post));
+            pictureRepository.saveAll(newPictures);
+
+            // 5. Gộp ảnh cũ và mới
+            List<Picture> mergedPictures = new ArrayList<>();
+            mergedPictures.addAll(picturesToKeep);
+            mergedPictures.addAll(newPictures);
+
+            // 6. Gán lại vào post
+            if (post.getPics() == null) {
+                post.setPics(new ArrayList<>());
+            } else {
+                post.getPics().clear();
             }
+            post.getPics().addAll(mergedPictures);
         } catch (Exception e) {
             log.error("Error while updating picture", e);
             throw new AppException(ErrorCode.UPDATE_ERROR);
         }
-        // Lưu và trả về kết quả
-        PostResponse p = PostMapper.INSTANCE.toPostResponse(postRepository.save(post));
-        List<UserPostInteraction> us = userPostInteractionRepository.findByPost(post).orElseGet(() -> {
-            p.setCountComments(0);
-            p.setCountLikes(0);
-            return Collections.emptyList();
-        }).stream().filter(u -> Objects.nonNull(u.getReaction())).toList();
-        if (us.isEmpty()) return p;
 
-        p.setCountLikes(us.size());
-        p.setCountComments(this.getNumberOfComments(us));
+        // Lưu và trả kết quả
+        Post savedPost = postRepository.save(post);
+        PostResponse p = PostMapper.INSTANCE.toPostResponse(savedPost);
+
+        // Lấy tương tác
+        List<UserPostInteraction> us = userPostInteractionRepository.findByPost(post)
+                .orElseGet(() -> {
+                    p.setCountComments(0);
+                    p.setCountLikes(0);
+                    return Collections.emptyList();
+                })
+                .stream()
+                .filter(u -> Objects.nonNull(u.getReaction()))
+                .toList();
+
+        if (!us.isEmpty()) {
+            p.setCountLikes(us.size());
+            p.setCountComments(this.getNumberOfComments(us));
+        }
+
         return p;
     }
 

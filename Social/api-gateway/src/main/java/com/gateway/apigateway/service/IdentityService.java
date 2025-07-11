@@ -19,8 +19,6 @@ public class IdentityService {
     IdentityClient identityClient;
 
     public Mono<ApiResponse<IntrospectResponse>> introspect(IntrospectRequest introspectRequest) {
-        log.info(introspectRequest.getToken());
-        log.info(introspectRequest.getRefreshToken());
         return identityClient.introspect(IntrospectRequest.builder()
                 .token(introspectRequest.getToken())
                 .refreshToken(introspectRequest.getRefreshToken())

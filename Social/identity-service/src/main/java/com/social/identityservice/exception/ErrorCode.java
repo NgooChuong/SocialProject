@@ -14,7 +14,7 @@ public enum ErrorCode {
     USER_NOT_EXISTED(1005, "User not existed", HttpStatus.NOT_FOUND),
     UNAUTHENTICATED(1006, "Unauthenticated", HttpStatus.UNAUTHORIZED),
     ATTRIBUTE_EXISTED(1007, "Attribute existed", HttpStatus.BAD_REQUEST),
-    UNAUTHORIZED(1007, "You do not have permission", HttpStatus.FORBIDDEN),
+    UNAUTHORIZED(1011, "You do not have permission", HttpStatus.FORBIDDEN),
     INVALID_PHONE (1008, "Invalid phone number", HttpStatus.BAD_REQUEST),
     INVALID_EMAIL (1009, "Invalid email address", HttpStatus.BAD_REQUEST),
     PROFILE_CREATION_FAILED (1010, "Profile creation failed", HttpStatus.INTERNAL_SERVER_ERROR),

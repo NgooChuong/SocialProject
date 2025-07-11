@@ -3,6 +3,7 @@ package com.social.postService.entity;
 import com.social.postService.enums.MediaType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 
 import java.util.List;
 
@@ -26,6 +27,7 @@ public class Post extends Base {
 
     @ToString.Exclude // ️ Tránh vòng lặp vô hạn
     @OneToMany(mappedBy = "post", cascade = CascadeType.REMOVE)
+    @BatchSize(size = 16)
     List<UserPostInteraction> userExpresses;
 
     @ToString.Exclude //  Tránh vòng lặp vô hạn
@@ -36,9 +38,11 @@ public class Post extends Base {
             inverseJoinColumns = @JoinColumn(name = "tag_id"),
             uniqueConstraints = @UniqueConstraint(columnNames = {"post_id", "tag_id"})
     )
+    @BatchSize(size = 16)
     List<Tag> tags;
 
     @ToString.Exclude // ⚠️ Tránh vòng lặp vô hạn
     @OneToMany(mappedBy = "post", cascade = CascadeType.REMOVE)
+    @BatchSize(size = 16)
     List<Picture> pics;
 }

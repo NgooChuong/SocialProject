@@ -18,6 +18,7 @@ public class KafkaProducerService {
     @Async
     public void sendPostMessage(String topic , NotificationPostMessage message) {
         try {
+            System.out.println("Message sent to " + topic + ": " + message);
             kafkaTemplate.send(topic, message);
             System.out.println("Message sent to " + topic + ": " + message);
         } catch (Exception e) {

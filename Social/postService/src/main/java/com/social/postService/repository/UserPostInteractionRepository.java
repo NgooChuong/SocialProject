@@ -14,6 +14,7 @@ public interface UserPostInteractionRepository extends JpaRepository<UserPostInt
     Optional<UserPostInteraction> findByPostAndUser(Post p, User user);
     Page<UserPostInteraction> findByPostAndReactionId(Post post, String reaction_id, Pageable pageable);
     Optional<List<UserPostInteraction>> findByPost(Post post);
+    Optional<List<UserPostInteraction>> findByPostIn(List<Post> posts);
     Page<UserPostInteraction> findByPost(Post post, Pageable pageable);
 
 }

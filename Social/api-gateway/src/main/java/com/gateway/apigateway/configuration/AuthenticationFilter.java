@@ -31,7 +31,7 @@ import java.util.Objects;
 @Component
 @Slf4j
 @RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PACKAGE, makeFinal = true) // default = package
+@FieldDefaults(level = AccessLevel.PACKAGE, makeFinal = true)
 public class AuthenticationFilter implements GlobalFilter, Ordered {
     IdentityService identityService;
     ObjectMapper objectMapper;
@@ -45,22 +45,14 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        log.info("Enter authentication filter....");
-
         if (isPublicEndpoint(exchange.getRequest()))
             return chain.filter(exchange);
-
-        // Get token from authorization header
         HttpHeaders headers = exchange.getRequest().getHeaders();
-        log.info("-----------: {}", headers);
         List<String> authHeader = headers.get(HttpHeaders.AUTHORIZATION);
         if (CollectionUtils.isEmpty(authHeader))
             return unauthenticated(exchange.getResponse());
-        log.info("Auth header: {}", authHeader);
         String token = authHeader.getFirst();
-        log.info("Token: {}", token);
         String refreshToken = Objects.requireNonNull(headers.get("RefreshToken")).getFirst();
-        log.info("RefreshToken: {}", refreshToken);
         IntrospectRequest request = IntrospectRequest.builder().token(token).refreshToken(refreshToken).build();
         return identityService.introspect(request).flatMap(introspectResponse -> {
             if (introspectResponse.getResult().isValid())
@@ -75,19 +67,18 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         return -1;
     }
 
-    // Lấy token thông qua api gateway
-    private boolean isPublicEndpoint(ServerHttpRequest request){
+    private boolean isPublicEndpoint(ServerHttpRequest request) {
         return Arrays.stream(publicEndpoints)
                 .anyMatch(s -> request.getURI().getPath().matches(s)); // match theo regex
     }
 
-    Mono<Void> unauthenticated(ServerHttpResponse response){
+    Mono<Void> unauthenticated(ServerHttpResponse response) {
         ApiResponse<?> apiResponse = ApiResponse.builder()
                 .code(1401)
                 .message("Unauthenticated")
                 .build();
 
-        String body = null;
+        String body;
         try {
             body = objectMapper.writeValueAsString(apiResponse);
         } catch (JsonProcessingException e) {

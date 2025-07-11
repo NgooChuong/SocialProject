@@ -20,15 +20,6 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 public class ApplicationInitConfig {
-    @Bean
-    public Cloudinary cloudinary() {
-        return new Cloudinary(ObjectUtils.asMap(
-                "cloud_name", "depgwkadm",
-                "api_key", "952231983342175",
-                "api_secret", "Q2zQxgULDrl4SCt4-Qe-xg-buUM",
-                "secure", true));
-    }
-
     private static final Object[][] TAG_DATA = {
             {"Technology", "Posts about tech and innovation", "technology"},
             {"Travel", "Travel experiences and tips", "travel"},

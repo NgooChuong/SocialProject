@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 @LoadBalancerClient(name="PROFILE")
 @FeignClient(name="PROFILE", path = "/profile")
+//@FeignClient(name = "profileClient", url = "http://profile-service:8081", path = "/profile")
 public interface UserUnauthenClient {
     @PostMapping(value = "/users",consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     InformationResponse createUser(@ModelAttribute @Valid ClientCreationRequest request);

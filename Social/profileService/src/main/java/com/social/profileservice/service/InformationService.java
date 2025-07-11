@@ -3,7 +3,6 @@ package com.social.profileservice.service;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.social.profileservice.dto.request.InformationCreateRequest;
-import com.social.profileservice.dto.request.InformationRequest;
 import com.social.profileservice.dto.request.InformationUpdateRequest;
 import com.social.profileservice.dto.response.InformationResponse;
 import com.social.profileservice.entity.Information;

@@ -14,6 +14,11 @@ import java.util.Date;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
+@Table(
+        indexes = {
+                @Index(name = "idx_user_id", columnList = "userId")
+        }
+)
 public class Information {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

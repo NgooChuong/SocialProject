@@ -14,13 +14,13 @@ import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring")
 public interface PostMapper {
-    PostMapper INSTANCE = Mappers.getMapper(PostMapper.class); // tao 1 instance singleTon-> k can inject khi xai
-//    source 🡆 tên thuộc tính của đối tượng nguồn (trong Post).
-//    target 🡆 tên thuộc tính của đối tượng đích (trong PostResponse).
-//    qualifiedByName 🡆 hàm ánh xạ tùy chỉnh, dùng nếu cần chuyển đổi dữ liệu.
+    PostMapper INSTANCE = Mappers.getMapper(PostMapper.class);
     @Mapping(source = "tags", target = "tags", qualifiedByName = "mapTagsToNames")
     @Mapping(source = "pics", target = "pics", qualifiedByName = "mapPicsToUrls")
     @Mapping(source = "user", target = "user")
+    @Mapping(source = "createdAt", target = "createdAt")
+    @Mapping(source = "updatedAt", target = "updatedAt")
+    @Mapping(source = "id", target = "id")
     PostResponse toPostResponse(Post post);
 
     @Named("mapTagsToNames")

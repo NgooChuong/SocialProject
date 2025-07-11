@@ -1,54 +1,53 @@
 server:
-  port: 8888
+  port: ${GATEWAY_PORT}
 app:
-  api-prefix: /api/v1
+  api-prefix: ${API_PREFIX}
 
 spring:
   application:
-    name: api-gateway
+    name:  ${GATEWAY_APPLICATION_NAME}
   data:
     redis:
-      host: localhost # Địa chỉ Redis
-      port: 6379 # Cổng Redis
+      host: ${GATEWAY_REDIS_HOST}
+      port: ${GATEWAY_REDIS_PORT}
   cloud:
     gateway:
       discovery:
         locator:
-          enabled: true  # Kích hoạt định tuyến tự động dựa trên tên service từ Eureka
+          enabled: true
       routes:
+          #http://identity-service:8080
         - id: identity_service
-          uri: lb://IDENTIFY
+          uri: lb://${IDENTITY_SERVICE}
           predicates:
           - Path=/identity/**
-          filters:
-#          - StripPrefix=2
-
+        #  lb://${PROFILE_SERVICE}
+        #http://profile-service:8081
         - id: profile_service
-          uri: lb://PROFILE
+          uri: lb://${PROFILE_SERVICE}
           predicates:
-          - Path=/profile/**
-          filters:
-#          - StripPrefix=
+            - Path=/profile/**
 
         - id: friend_service
-          uri: lb://FRIEND
+          uri: lb://${FRIEND_SERVICE}
           predicates:
             - Path=/friend/**
-          filters:
 
         - id: notification_service
-          uri: lb://NOTI
+          uri: lb://${NOTIFICATION_SERVICE}
           predicates:
             - Path=/notification/**
-          filters:
 
         - id: post_service
-          uri: lb://POST
+          uri: lb://${POST_SERVICE}
           predicates:
             - Path=/post/**
-          filters:
 
 eureka:
   client:
-    serviceUrl:
-      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+
+IDENTIFY_URL: ${IDENTIFY_URL}

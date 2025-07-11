@@ -10,6 +10,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,14 +25,6 @@ import java.util.Date;
 public class ApplicationInitConfig {
 
     PasswordEncoder passwordEncoder;
-    @Bean
-    public Cloudinary cloudinary() {
-        return new Cloudinary(ObjectUtils.asMap(
-                "cloud_name", "depgwkadm",
-                "api_key", "952231983342175",
-                "api_secret", "Q2zQxgULDrl4SCt4-Qe-xg-buUM",
-                "secure", true));
-    }
 
     @Bean
     ApplicationRunner applicationRunner(UserRepository userRepository){

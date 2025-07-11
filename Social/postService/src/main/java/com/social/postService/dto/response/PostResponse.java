@@ -3,6 +3,7 @@ package com.social.postService.dto.response;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.sql.Timestamp;
 import java.util.List;
 
 @Data
@@ -11,6 +12,7 @@ import java.util.List;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PostResponse {
+    String id;
     String title;
     String content;
     Boolean isPrivate;
@@ -19,4 +21,6 @@ public class PostResponse {
     UserResponse user;
     Integer countLikes;
     Integer countComments;
+    Timestamp createdAt;
+    Timestamp updatedAt;
 }

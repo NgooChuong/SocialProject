@@ -22,7 +22,7 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     private final String[] PUBLIC_ENDPOINTS = {"/users/registration",
-            "/auth/token", "/auth/introspect", "/auth/google/token",
+            "/auth/token", "/auth/introspect", "/auth/google/token","/logout"
 
     };
     private final String[] SWAGGER_ENDPOINTS = {"/swagger-ui/**",

@@ -2,7 +2,6 @@ package com.social.profileservice.controller;
 
 import com.social.profileservice.dto.request.ApiResponse;
 import com.social.profileservice.dto.request.InformationCreateRequest;
-import com.social.profileservice.dto.request.InformationRequest;
 import com.social.profileservice.dto.request.InformationUpdateRequest;
 import com.social.profileservice.dto.response.InformationResponse;
 import com.social.profileservice.service.InformationService;
@@ -23,7 +22,7 @@ public class InformationController {
     @GetMapping("/{profileId}")
     ApiResponse<InformationResponse> getProfile(@PathVariable String profileId) {
         return ApiResponse.<InformationResponse>builder()
-                .result(informationService.getProfile(profileId))
+                .result(informationService.getProfileByUserId(profileId))
                 .build();
     }
 

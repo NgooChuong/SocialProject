@@ -1,22 +1,26 @@
 server:
-  port: 8111
+  port: ${POST_PORT:8111}
   servlet:
-    context-path: /post
-
+    context-path: ${POST_CONTEXT_PATH:/post}
 
 spring:
   application:
-    name: POST
+    name: ${POST_APP_NAME:POST}
   datasource:
-    url: "jdbc:mysql://localhost:3306/social_post"
-    username: root
-    password: ngoquang178
+    url: jdbc:mysql://${POST_DB_HOST:localhost}:${POST_DB_PORT:3306}/${POST_DB_NAME:social_post}
+    username: ${POST_DB_USERNAME}
+    password: ${POST_DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
+    properties:
+      hibernate:
+        default_batch_fetch_size: 16
   kafka:
-    bootstrap-servers: localhost:9092,localhost:9093,localhost:9094
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -28,30 +32,31 @@ spring:
       retries: 5
       request.timeout.ms: 20000
       delivery.timeout.ms: 30000
-#  rabbitmq:
-#    host: localhost
-#    port: 5672
-#    username: guest
-#    password: guest
 
 jwt:
-  signerKey: "1TjXchw5FloESb63Kc+DFhTARvpWL4jUGCwfGWxuG5SIf/1y/LgJxHnMqaF6A/ij"
+  signerKey: ${POST_JWT_SIGNER_KEY:1TjXchw5FloESb63Kc+DFhTARvpWL4jUGCwfGWxuG5SIf/1y/LgJxHnMqaF6A/ij}
 
 kafka:
-  topic: Post_Topic
+  topic: ${POST_KAFKA_TOPIC:Post_Topic}
+
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/ # Địa chỉ của Eureka Server
-    register-with-eureka: true # Tùy chọn, nếu bạn muốn ứng dụng cũng đăng ký
-    fetch-registry: true # Bắt buộc để lấy thông tin từ Eureka
+      defaultZone: ${EUREKA_SERVER_URL}
+    register-with-eureka: true
+    fetch-registry: true
     enabled: true
   instance:
     hostname: localhost
-#    prefer-ip-address: true # Sử dụng IP thay vì hostname
-
 
 logging:
   level:
     org.springframework.web.socket: DEBUG
     org.springframework.messaging: DEBUG
+
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME}
+  api-key: ${CLOUDINARY_API_KEY}
+  api-secret: ${CLOUDINARY_API_SECRET}
+  secure: true

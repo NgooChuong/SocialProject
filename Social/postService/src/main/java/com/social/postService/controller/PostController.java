@@ -37,7 +37,7 @@ public class PostController {
     @GetMapping("/MyPosts")
     public ApiResponse<List<PostResponse>> getMyPosts(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "2") int size
     ) {
         return ApiResponse.<List<PostResponse>>builder().result(postService.list(page, size)).build();
     }
@@ -73,6 +73,8 @@ public class PostController {
     })
     @PutMapping(value = "/update/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ApiResponse<PostResponse> updatePost(@PathVariable("id") String id, @ModelAttribute @Valid UpdatePostRequest updatePostRequest) {
+        System.out.println(id);
+        System.out.println(updatePostRequest);
         return ApiResponse.<PostResponse>builder().result(postService.update(id, updatePostRequest)).build();
     }
 

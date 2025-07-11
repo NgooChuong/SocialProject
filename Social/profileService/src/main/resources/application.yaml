@@ -1,50 +1,51 @@
 server:
-  port: 8081
+  port: ${PROFILE_PORT:8081}
   servlet:
-    context-path: /profile
+    context-path: ${PROFILE_CONTEXT_PATH:/profile}
 
 spring:
   application:
-    name: PROFILE
+    name: ${PROFILE_APP_NAME:PROFILE}
   datasource:
-    url: "jdbc:mysql://localhost:3306/socialuserinformation"
-    username: root
-    password: ngoquang178
+    url: jdbc:mysql://${PROFILE_DB_HOST:localhost}:${PROFILE_DB_PORT:3306}/${PROFILE_DB_NAME:socialuserinformation}
+    username: ${PROFILE_DB_USERNAME}
+    password: ${PROFILE_DB_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
   rabbitmq:
-    host: localhost
-    port: 5672
-    username: guest
-    password: guest
-
-
+    host: ${PROFILE_RABBITMQ_HOST:localhost}
+    port: ${PROFILE_RABBITMQ_PORT:5672}
+    username: ${PROFILE_RABBITMQ_USERNAME:guest}
+    password: ${PROFILE_RABBITMQ_PASSWORD:guest}
 
 rabbit:
   queue:
-    google: googleAuthQueue
-
+    google: ${PROFILE_RABBITMQ_QUEUE_GOOGLE:googleAuthQueue}
 
 jwt:
-  signerKey: "1TjXchw5FloESb63Kc+DFhTARvpWL4jUGCwfGWxuG5SIf/1y/LgJxHnMqaF6A/ij"
+  signerKey: ${PROFILE_JWT_SIGNER_KEY:1TjXchw5FloESb63Kc+DFhTARvpWL4jUGCwfGWxuG5SIf/1y/LgJxHnMqaF6A/ij}
 
 app:
   services:
-    identity: http://localhost:8080/identity/
-
+    identity: ${PROFILE_SERVICE_IDENTITY:http://localhost:8080/identity/}
 
 redis:
-  host: redis://localhost:6379
+  host: ${REDIS_URL}
 
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/ # Địa chỉ của Eureka Server
-    register-with-eureka: true # Tùy chọn, nếu bạn muốn ứng dụng cũng đăng ký
-    fetch-registry: true # Bắt buộc để lấy thông tin từ Eureka
+      defaultZone: ${EUREKA_SERVER_URL}
+    register-with-eureka: true
+    fetch-registry: true
     enabled: true
   instance:
     hostname: localhost
-#    prefer-ip-address: true # Sử dụng IP thay vì hostname
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME}
+  api-key: ${CLOUDINARY_API_KEY}
+  api-secret: ${CLOUDINARY_API_SECRET}
+  secure: true

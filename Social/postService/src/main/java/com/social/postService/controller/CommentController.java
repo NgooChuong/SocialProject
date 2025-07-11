@@ -55,6 +55,8 @@ public class CommentController {
         String destination = "/topic/post" + createCommentRequest.getPostId();
         messagingTemplate.convertAndSend(destination, message);
     }
+
+
     @Operation(summary = "update comment in post")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "1020", description = "Comment not existed"),
@@ -69,6 +71,8 @@ public class CommentController {
                 .result(commentService.update(id, newComment))
                 .build();
     }
+
+
     @Operation(summary = "delete comment in post")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "1020", description = "Comment not existed"),

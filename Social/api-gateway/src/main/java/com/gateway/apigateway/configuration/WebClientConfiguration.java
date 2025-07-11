@@ -1,11 +1,11 @@
 package com.gateway.apigateway.configuration;
 
 import com.gateway.apigateway.repository.IdentityClient;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.CorsWebFilter;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -17,33 +17,28 @@ import java.util.List;
 @Configuration
 
 public class WebClientConfiguration {
-    //WebClient: Đây là một client không đồng bộ (asynchronous)
-    // được sử dụng để gọi các API RESTful
-    // hoặc dịch vụ web khác trong các ứng dụng Spring WebFlux.
+
+    @Value("${IDENTIFY_URL}")
+    private String identify_url;
+
     @Bean
     @LoadBalanced
-    WebClient webClient(){
-        return WebClient.builder() //Sử dụng builder pattern để tạo ra một WebClient
-                .baseUrl("http://localhost:8080/identity")
+    WebClient webClient() {
+        return WebClient.builder()
+                .baseUrl(identify_url)
                 .build();
     }
 
 
-    @Bean // phải khai báo proxy để identityClient chạy được
-    IdentityClient identityClient(WebClient webClient){
-        //HttpServiceProxyFactory: Là một factory để tạo ra
-        // các proxy cho client sử dụng WebClient làm backend.
+    @Bean
+    IdentityClient identityClient(WebClient webClient) {
         HttpServiceProxyFactory httpServiceProxyFactory = HttpServiceProxyFactory
                 .builderFor(WebClientAdapter.create(webClient)).build();
-        //httpServiceProxyFactory.createClient(IdentityClient.class):
-        // Tạo một instance của IdentityClient dựa trên proxy đã được cấu hình.
-        // Điều này cho phép bạn sử dụng IdentityClient
-        // như một client HTTP được xây dựng dựa trên WebClient.
         return httpServiceProxyFactory.createClient(IdentityClient.class);
     }
 
     @Bean
-    CorsWebFilter corsWebFilter(){
+    CorsWebFilter corsWebFilter() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of("*"));
         config.setAllowedHeaders(List.of("*"));

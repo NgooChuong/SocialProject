@@ -20,4 +20,5 @@ public class UpdatePostRequest {
     List<String> tags;
     Integer countLikes;
     Integer countComments;
+    List<String> oldPictures;
 }
