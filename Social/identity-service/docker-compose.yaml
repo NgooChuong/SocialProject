@@ -1,0 +1,18 @@
+services:
+  identity-service:
+    build: .
+    container_name: identity-service
+    ports:
+      - "8080:8080"
+    env_file:
+      - ../.env_docker
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    name: social-network
+    driver: bridge
+    external: true
+
+

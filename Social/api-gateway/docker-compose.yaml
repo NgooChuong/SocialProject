@@ -1,0 +1,23 @@
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8888:8888"
+    env_file:
+      - ../.env_docker   # Đảm bảo file .env thực sự nằm ở thư mục trên api-gateway
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://admin:admin@eureka:8761/eureka/
+    networks:
+      - app-network
+
+volumes:
+  redis-data:
+
+networks:
+  app-network:
+    name: social-network
+    driver: bridge
+    external: true
