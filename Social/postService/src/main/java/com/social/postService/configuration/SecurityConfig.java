@@ -14,6 +14,11 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.oauth2.server.resource.web.HeaderBearerTokenResolver;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.reactive.CorsWebFilter;
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -22,13 +27,12 @@ public class SecurityConfig {
 
     private final String[] SWAGGER_ENDPOINTS = {"/swagger-ui/**",
             "/v3/api-docs/**", "/swagger-resources/**",
-            "/webjars/**"};
+            "/webjars/**","/ws/**",
+            "/ws/info",
+            "/ws/info/**"};
 
     @Autowired
     private CustomJwtDecoder customJwtDecoder;
-
-//    @Value("${jwt.signerKey}")
-//    private String signerKey;
 
         @Bean
         public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {

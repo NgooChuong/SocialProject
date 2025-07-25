@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api")
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class FriendController {
     FriendService friendService;
+
 
     @PostMapping("/add/{friend_id}")
     public ApiResponse<Boolean> addFriend(@PathVariable String friend_id) {
@@ -50,5 +53,9 @@ public class FriendController {
             @RequestParam(defaultValue = "ACCEPTED") String type
     ) {
         return ApiResponse.<Page<UserResponse>>builder().result(friendService.getFriends(page,size,type)).build();
+    }
+    @GetMapping("/getAllYourFriends")
+    public ApiResponse<List<String>> getAllYourFriends() {
+        return ApiResponse.<List<String>>builder().result(friendService.getAllYourFriendIds()).build();
     }
 }

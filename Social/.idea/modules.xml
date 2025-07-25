@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/friendService/FriendService.iml" filepath="$PROJECT_DIR$/friendService/FriendService.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/Social.iml" filepath="$PROJECT_DIR$/.idea/Social.iml" />
     </modules>
   </component>

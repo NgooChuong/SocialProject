@@ -21,6 +21,7 @@ public class PostResponse {
     UserResponse user;
     Integer countLikes;
     Integer countComments;
+    ReactionResponse myReaction;
     Timestamp createdAt;
     Timestamp updatedAt;
 }

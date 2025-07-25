@@ -1,12 +1,18 @@
-package com.social.identityservice.service;
+package com.social.postService.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import io.lettuce.core.KeyScanCursor;
+import io.lettuce.core.ScanArgs;
+import io.lettuce.core.ScanCursor;
 import io.lettuce.core.api.sync.RedisCommands;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -24,9 +30,16 @@ public class RedisService {
     }
 
     // Lưu object vào Redis dưới dạng JSON
-    public <T> void save(String key, Long TTL, T object) throws JsonProcessingException {
-        String jsonValue = objectMapper.writeValueAsString(object); // Chuyển object thành JSON
-        syncCommands.setex(key, TTL, jsonValue); // set value và TTL
+    public <T> void save(String key, T object, int TTL){
+        try {
+            String jsonValue = objectMapper.writeValueAsString(object); // Chuyển object thành JSON
+            syncCommands.setex(key, TTL, jsonValue); // set value và TTL
+
+        }
+        catch (JsonProcessingException e) {
+            log.error(e.getMessage());
+        }
+
     }
     // Cập nhật dữ liệu trong Redis với key và object
     public <T> void update(String key, T object) throws JsonProcessingException {
@@ -53,5 +66,18 @@ public class RedisService {
     // Xóa object khỏi Redis
     public void delete(String key) {
         syncCommands.del(key); // Xóa giá trị khỏi Redis
+    }
+
+    public List<String> scanKeys(String pattern) {
+        List<String> keys = new ArrayList<>();
+        String cursor = "0";
+
+        do {
+            KeyScanCursor<String> scanCursor = syncCommands.scan(ScanCursor.of(cursor), ScanArgs.Builder.matches(pattern).limit(100));
+            keys.addAll(scanCursor.getKeys());
+            cursor = scanCursor.getCursor();
+        } while (!"0".equals(cursor));
+
+        return keys;
     }
 }

@@ -13,6 +13,7 @@ public interface UserPostReactionMapper {
     UserPostReactionMapper INSTANCE = Mappers.getMapper(UserPostReactionMapper.class);
 
     @Mapping(source = "user", target = "user")
+    @Mapping(source = "reaction.id", target = "id")
     @Mapping(source = "reaction", target = "reaction", qualifiedByName = "mapReactionToReactionString")
     @Mapping(source = "created_at", target = "created_at")
     @Mapping(source = "updated_at", target = "updated_at")

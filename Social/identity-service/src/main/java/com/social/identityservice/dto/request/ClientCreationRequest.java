@@ -16,4 +16,5 @@ public class ClientCreationRequest {
     String lastName;
     Date dob;
     String avatar;
+    String location;
 }

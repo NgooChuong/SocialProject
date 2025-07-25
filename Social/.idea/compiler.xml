@@ -10,7 +10,7 @@
         <module name="api-gateway" />
         <module name="eureka-server" />
       </profile>
-      <profile name="Annotation profile for identity-service" enabled="true">
+      <profile name="Annotation profile for postService" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
@@ -25,8 +25,8 @@
         </processorPath>
         <module name="FriendService" />
         <module name="profileService" />
-        <module name="identity-service" />
         <module name="postService" />
+        <module name="identity-service" />
         <module name="notificationService" />
       </profile>
     </annotationProcessing>

@@ -1,5 +1,6 @@
 package com.social.notificationService.service;
 
+import com.social.notificationService.configuration.TopicConfig;
 import com.social.notificationService.dto.request.message.NotiFriendMessage;
 import com.social.notificationService.dto.request.message.NotificationPostMessage;
 import com.social.notificationService.dto.request.message.UserMessage;
@@ -23,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
@@ -31,6 +33,7 @@ import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 
 import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,6 +49,7 @@ public class NotificationService {
     NotificationFriendRepository notiFriendRepository;
     UserRepository userRepository;
     MongoTemplate mongoTemplate;
+    TopicConfig topicConfig;
 
     private User store(User u) {
         return userRepository.save(u);
@@ -69,6 +73,7 @@ public class NotificationService {
 
         return new PagedNotiResponse(notifications, page, size, total);
     }
+
     private Aggregation createAggregation(String receiverId, List<String> collectionNames, String type, int page, int size, boolean isCount) {
         List<AggregationOperation> operations = new ArrayList<>();
 
@@ -120,6 +125,7 @@ public class NotificationService {
         userMap.put("receiver", receiver);
         return userMap;
     }
+
     public Map<String, User> getPostUsers(NotificationPostMessage note) {
         Map<String, User> userMap = new HashMap<>();
         User sender = store(UserMapper.INSTANCE.toUser(note.getSender()));
@@ -129,16 +135,22 @@ public class NotificationService {
         return userMap;
     }
 
-    public void store(NotiFriendMessage noti) {
+    public void store(String topic, NotiFriendMessage noti) {
         Map<String, User> userMap = getFriendUsers(noti);
         NotificationFriend friendNoti = NotificationFriend.builder()
-                .title(NotiEnum.FriendEnum.getTitle())
-                .content(NotiEnum.FriendEnum.getContent())
                 .createdAt(new Date(noti.getCreatedAt().getTime()))
                 .sender(userMap.get("sender"))
                 .receiver(userMap.get("receiver"))
                 .status(NotiStatus.NON_VIEWED)
                 .build();
+        if (topic.equals(topicConfig.getFriend_topic_add())){
+            friendNoti.setTitle(NotiEnum.FriendEnum.getTitle());
+            friendNoti.setContent(NotiEnum.FriendEnum.getContent());
+        }
+        else if (topic.equals(topicConfig.getFriend_topic_acp())){
+            friendNoti.setTitle(NotiEnum.FriendAcceptedEnum.getTitle());
+            friendNoti.setContent(NotiEnum.FriendAcceptedEnum.getContent());
+        }
         notiFriendRepository.save(friendNoti);
     }
 
@@ -155,6 +167,39 @@ public class NotificationService {
                 .build();
         notiPostRepository.save(friendNoti);
     }
+
+    public Notification readNotification(String notificationId) {
+        String userId = CommonService.getUserIdFromJwt();
+
+        return updateStatusIfReceiverMatches(notiFriendRepository.findById(notificationId), userId)
+                .orElseGet(() ->
+                        updateStatusIfReceiverMatches(notiPostRepository.findById(notificationId), userId)
+                                .orElseThrow(() -> new AppException(ErrorCode.VIEW_STATUS_ERROR))
+                );
+    }
+
+    private Optional<Notification> updateStatusIfReceiverMatches(Optional<? extends Notification> optional, String userId) {
+        return optional.filter(noti -> {
+                    if (noti instanceof NotificationFriend friendNoti) {
+                        return friendNoti.getReceiver() != null && userId.equals(friendNoti.getReceiver().getId());
+                    } else if (noti instanceof NotificationPost postNoti) {
+                        return postNoti.getReceiver() != null && userId.equals(postNoti.getReceiver().getId());
+                    }
+                    return false;
+                })
+                .map(noti -> {
+                    noti.setStatus(NotiStatus.VIEWED);
+                    if (noti instanceof NotificationFriend friendNoti) {
+                        return notiFriendRepository.save(friendNoti);
+                    } else {
+                        NotificationPost postNoti = (NotificationPost) noti;
+                        return notiPostRepository.save(postNoti);
+                    }
+                });
+    }
+
+
+
 }
 
 

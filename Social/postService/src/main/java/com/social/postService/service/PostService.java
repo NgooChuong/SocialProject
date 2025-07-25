@@ -2,6 +2,7 @@ package com.social.postService.service;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.social.postService.dto.request.ApiResponse;
 import com.social.postService.dto.request.CreatePostRequest;
 import com.social.postService.dto.request.UpdatePostRequest;
@@ -9,6 +10,7 @@ import com.social.postService.dto.request.message.NotificationPostMessage;
 import com.social.postService.dto.request.message.UserNotiMessage;
 import com.social.postService.dto.response.InformationResponse;
 import com.social.postService.dto.response.PostResponse;
+import com.social.postService.dto.response.ReactionResponse;
 import com.social.postService.dto.response.UserResponse;
 import com.social.postService.entity.*;
 import com.social.postService.enums.MediaType;
@@ -29,22 +31,21 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 
 @Service
 @Transactional
-
 @Slf4j
 public class PostService {
     private final PostRepository postRepository;
@@ -56,11 +57,13 @@ public class PostService {
     private final CommentRepository commentRepository;
     private final FriendClient friendClient;
     private final KafkaProducerService kafkaProducerService;
+    private final RedisService redisService;
+    private static final ExecutorService uploadExecutor = Executors.newFixedThreadPool(4);
 
     @Value("${kafka.topic}")
     private String topic;
 
-    public PostService(PostRepository postRepository, TagRepository tagRepository, PictureRepository pictureRepository, Cloudinary cloudinary, CommonService commonService, UserPostInteractionRepository userPostInteractionRepository, CommentRepository commentRepository, FriendClient friendClient, KafkaProducerService kafkaProducerService) {
+    public PostService(PostRepository postRepository, TagRepository tagRepository, PictureRepository pictureRepository, Cloudinary cloudinary, CommonService commonService, UserPostInteractionRepository userPostInteractionRepository, CommentRepository commentRepository, FriendClient friendClient, KafkaProducerService kafkaProducerService, RedisService redisService) {
         this.postRepository = postRepository;
         this.tagRepository = tagRepository;
         this.pictureRepository = pictureRepository;
@@ -70,6 +73,7 @@ public class PostService {
         this.commentRepository = commentRepository;
         this.friendClient = friendClient;
         this.kafkaProducerService = kafkaProducerService;
+        this.redisService = redisService;
     }
 
     private void storeTagsNonAvailable(List<String> tags) {
@@ -88,17 +92,19 @@ public class PostService {
     }
 
     private List<Picture> storePicsToCloudinary(List<MultipartFile> Pics) {
-        if (Pics==null || Pics.isEmpty()) return new ArrayList<>();
+        if (Pics == null || Pics.isEmpty()) return new ArrayList<>();
         List<CompletableFuture<Picture>> futurePics = Pics.stream().map(pic ->
                 CompletableFuture.supplyAsync(() -> {
                     try {
+                        long start = System.currentTimeMillis();
                         Map res = this.cloudinary.uploader().upload(pic.getBytes(),
                                 ObjectUtils.asMap("resource_type", "auto"));
+                        log.info("Uploaded file: {} in {}ms", pic.getOriginalFilename(), System.currentTimeMillis() - start);
                         return Picture.builder().url(res.get("secure_url").toString()).build();
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
-                })).toList();
+                },uploadExecutor)).toList();
         CompletableFuture<List<Picture>> allFutures = CompletableFuture.allOf(futurePics.toArray(new CompletableFuture[0]))
                 .thenApply(v -> futurePics.stream()
                         .map(future -> {
@@ -178,30 +184,69 @@ public class PostService {
                 .join();
     }
 
-    private void sendMessagesPostToFriends (String postId) {
+
+
+    @Async
+    public void sendMessagesPostToFriendsAsync(String postId) {
+        try {
+            sendMessagesPostToFriendsSync(postId);
+        } catch (Exception e) {
+            log.error("Async FriendService lỗi. Đẩy postId vào Redis để retry: {}", postId);
+            String redisKey = "retry:post:" + postId;
+            redisService.save(redisKey, postId, 300); // Tránh overwrite
+        }
+    }
+
+    // Hàm sync dùng trong scheduler hoặc async wrapper
+    public void sendMessagesPostToFriendsSync(String postId) {
         List<UserResponse> listFriends = fetchAllFriendsAsync("ACCEPTED");
-        log.info("list: {}", listFriends);
+        log.info("Danh sách bạn bè: {}", listFriends);
         User sender = commonService.createInstanceUser();
+
         listFriends.forEach(v -> {
             User receiver = UserMapper.INSTANCE.toUser(v);
             NotificationPostMessage noti = createNotificationFriendMessage(sender, receiver, postId);
-            kafkaProducerService.sendPostMessage(topic,noti);
+            kafkaProducerService.sendPostMessage(topic, noti);
         });
     }
+
+//    @Scheduled(fixedDelay = 10000) // Mỗi 60s chạy lại
+    public void retryFailedPostNotifications() {
+        try {
+            System.out.println("aaaaaaaaaaaaaaaa");
+            List<String> keys = redisService.scanKeys("retry:post:*");
+            log.info("Retry gửi notification={}", keys);
+
+            for (String key : keys) {
+                String postId = redisService.get(key, String.class);
+                if (postId != null) {
+                    log.info("Retry gửi notification cho postId={}", postId);
+                    try {
+                        sendMessagesPostToFriendsSync(postId); // retry
+                        redisService.delete(key); // thành công thì xóa khỏi Redis
+                    } catch (Exception ex) {
+                        log.error("Retry thất bại: {} ", ex.getMessage());
+                        log.error("Retry thất bại cho postId={}, giữ lại trong Redis", postId);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Lỗi trong job retry notification", e);
+        }
+    }
+
 
     public PostResponse store(CreatePostRequest createPostRequest) {
         List<String> requestedTags = Optional.ofNullable(createPostRequest.getTags())
                 .orElse(Collections.emptyList());
         storeTagsNonAvailable(requestedTags);
 
-        CompletableFuture<List<Tag>> tagsFuture = CompletableFuture.supplyAsync(() ->
-                tagRepository.findByNameIn(requestedTags));
         CompletableFuture<List<Picture>> picsFuture = CompletableFuture.supplyAsync(() ->
                 storePicsToCloudinary(createPostRequest.getPictures()));
-        CompletableFuture.allOf(tagsFuture, picsFuture).join();
+        CompletableFuture.allOf(picsFuture).join();
 
         try {
-            List<Tag> newTagsList = tagsFuture.get();
+            List<Tag> newTagsList = tagRepository.findByNameIn(requestedTags);
             List<Picture> pictures = picsFuture.get();
 
             Post newPost = Post.builder()
@@ -220,7 +265,7 @@ public class PostService {
             }
 
             Post savedPost = postRepository.save(newPost);
-            sendMessagesPostToFriends(savedPost.getId());
+            sendMessagesPostToFriendsAsync(savedPost.getId());
             PostResponse p = PostMapper.INSTANCE.toPostResponse(savedPost);
             p.setCountLikes(0);
             p.setCountComments(0);
@@ -297,18 +342,30 @@ public class PostService {
 
         // Group theo postId để truy cập nhanh
         Map<String, List<UserPostInteraction>> interactionMap = interactions.stream()
-                .filter(u -> u.getReaction() != null)
                 .collect(Collectors.groupingBy(u -> u.getPost().getId()));
 
         // Gán count likes/comments vào response
-        for (int i = 0; i < postResponses.size(); i++) {
+        IntStream.range(0, postResponses.size()).forEach(i -> {
             Post post = posts.get(i);
             PostResponse response = postResponses.get(i);
             List<UserPostInteraction> us = interactionMap.getOrDefault(post.getId(), Collections.emptyList());
 
-            response.setCountLikes(us.size());
+            response.setCountLikes((int) us.stream().filter(u -> u.getReaction() != null).count());
             response.setCountComments(getNumberOfComments(us));
-        }
+            us.stream()
+                    .filter(u -> u.getUser().getId().equals(user.getId()) && u.getReaction() != null)
+                    .findFirst()
+                    .ifPresent(u -> {
+                        Reaction r = u.getReaction();
+                        ReactionResponse reactionResponse = ReactionResponse.builder()
+                                .id(r.getId())
+                                .reaction(r.getIconName().name())
+                                .created_at(r.getCreatedAt())
+                                .updated_at(r.getUpdatedAt())
+                                .build();
+                        response.setMyReaction(reactionResponse);
+                    });
+        });
         return postResponses;
     }
 
@@ -394,21 +451,21 @@ public class PostService {
         Post savedPost = postRepository.save(post);
         PostResponse p = PostMapper.INSTANCE.toPostResponse(savedPost);
 
-        // Lấy tương tác
-        List<UserPostInteraction> us = userPostInteractionRepository.findByPost(post)
-                .orElseGet(() -> {
-                    p.setCountComments(0);
-                    p.setCountLikes(0);
-                    return Collections.emptyList();
-                })
-                .stream()
-                .filter(u -> Objects.nonNull(u.getReaction()))
-                .toList();
-
-        if (!us.isEmpty()) {
-            p.setCountLikes(us.size());
-            p.setCountComments(this.getNumberOfComments(us));
-        }
+//        // Lấy tương tác
+//        List<UserPostInteraction> us = userPostInteractionRepository.findByPost(post)
+//                .orElseGet(() -> {
+//                    p.setCountComments(0);
+//                    p.setCountLikes(0);
+//                    return Collections.emptyList();
+//                })
+//                .stream()
+//                .filter(u -> Objects.nonNull(u.getReaction()))
+//                .toList();
+//
+//        if (!us.isEmpty()) {
+//            p.setCountLikes(us.size());
+//            p.setCountComments(this.getNumberOfComments(us));
+//        }
 
         return p;
     }

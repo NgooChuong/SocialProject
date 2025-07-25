@@ -29,6 +29,7 @@ public class UserCreationRequest {
     MultipartFile file;
     String login_at;
     String google_id;
+    String location;
 }
 
 

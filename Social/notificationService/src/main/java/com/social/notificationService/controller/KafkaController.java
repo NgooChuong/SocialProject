@@ -1,4 +1,4 @@
-package com.social.notificationService.Controller;
+package com.social.notificationService.controller;
 
 import com.social.notificationService.dto.request.message.NotiFriendMessage;
 import com.social.notificationService.dto.request.message.NotificationPostMessage;

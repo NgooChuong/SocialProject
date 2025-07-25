@@ -15,6 +15,9 @@ public interface CommentMapper {
     CommentMapper INSTANCE = Mappers.getMapper(CommentMapper.class); // tao 1 instance singleTon-> k can inject khi xai
     @Mapping(source = "content",target = "content")
     @Mapping(source = "userPostInteraction.user",target = "user")
+    @Mapping(source = "id", target = "id")
+    @Mapping(source = "createdAt", target = "createdAt")
+    @Mapping(source = "updatedAt", target = "updatedAt")
     CommentResponse toCommentResponse(Comment cmt);
 
 

@@ -32,6 +32,8 @@ spring:
       retries: 5
       request.timeout.ms: 20000
       delivery.timeout.ms: 30000
+redis:
+  host: ${REDIS_URL:redis://localhost:6379}
 
 jwt:
   signerKey: ${POST_JWT_SIGNER_KEY:1TjXchw5FloESb63Kc+DFhTARvpWL4jUGCwfGWxuG5SIf/1y/LgJxHnMqaF6A/ij}

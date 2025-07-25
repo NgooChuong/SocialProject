@@ -104,15 +104,14 @@ public class FriendService {
     public void acceptOrReject(String friendId, FriendStatusRequest status) {
         User user = commonService.getOrcreateInstanceAuthUser();
         User friend = commonService.getOrcreateInstanceUser(friendId);
-
-        friendshipRepository.findByUserAndFriend(user, friend).ifPresent((u) -> {
+        friendshipRepository.findByUserAndFriend(friend, user).ifPresent((u) -> {
             FriendshipStatus fs;
             try {
                 fs = FriendshipStatus.valueOf(status.getType());
             } catch (Exception e) {
                 throw new AppException(ErrorCode.FRIENDSHIP_STATUS_NOT_VALID);
             }
-
+            System.out.println(status);
             if (u.getStatus() == FriendshipStatus.PENDING) {
                 switch (fs) {
                     case ACCEPTED -> {
@@ -120,7 +119,7 @@ public class FriendService {
                         friendshipRepository.save(u);
                         // Gửi message khi chấp nhận
                         NotificationFriendMessage notificationFriendMessage = createNotificationFriendMessage(user, friend);
-                        kafkaProducerService.sendFriendMessage(TOPIC_FRIEND_ADD, notificationFriendMessage);
+                        kafkaProducerService.sendFriendMessage(TOPIC_FRIEND_ACP, notificationFriendMessage);
                     }
                     case REJECTED -> {
                         u.setStatus(FriendshipStatus.REJECTED);
@@ -190,5 +189,9 @@ public class FriendService {
             log.error("Invalid friendship status: {}", friendStatusRequest);
             throw new AppException(ErrorCode.FRIENDSHIP_STATUS_NOT_VALID);
         }
+    }
+    public List<String> getAllYourFriendIds() {
+        User user = commonService.getOrcreateInstanceAuthUser();
+        return friendshipRepository.findAllFriendIds(user.getId());
     }
 }

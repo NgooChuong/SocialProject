@@ -149,7 +149,7 @@ public class AuthenticationService {
                 .refreshToken(refreshToken.getRefreshToken())
                 .expiryTime(refreshToken.getExpiresAt()) // Thêm 7 ngày từ thời điểm hiện tại
                 .build();
-        redisService.save(user.getUserId(), newRedisData);
+        redisService.save(user.getUserId(),refreshToken.getExpiresAt(), newRedisData);
         return RedisResponse.builder()
                 .token(token)
                 .refreshToken(refreshToken.getRefreshToken())

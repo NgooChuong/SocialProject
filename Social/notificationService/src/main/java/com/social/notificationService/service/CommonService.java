@@ -1,6 +1,5 @@
 package com.social.notificationService.service;
 
-import com.social.notificationService.entity.User;
 import com.social.notificationService.exception.AppException;
 import com.social.notificationService.exception.ErrorCode;
 import com.social.notificationService.repository.UserRepository;
@@ -27,6 +26,11 @@ public class CommonService {
         this.userRepository = userRepository;
         this.taskExecutor = taskExecutor;
     }
-
-
+    public static String getUserIdFromJwt() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof Jwt jwt)) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+        return jwt.getClaimAsString("userId");
+    }
 }

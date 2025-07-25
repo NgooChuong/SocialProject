@@ -10,10 +10,9 @@ import java.sql.Timestamp;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class CommentResponse {
+public class ReactionResponse {
     String id;
-    String content;
-    Timestamp createdAt;
-    Timestamp updatedAt;
-    UserResponse user;
+    Timestamp created_at;
+    Timestamp updated_at;
+    String reaction;
 }

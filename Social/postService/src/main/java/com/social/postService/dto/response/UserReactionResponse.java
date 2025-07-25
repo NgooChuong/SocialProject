@@ -12,6 +12,7 @@ import java.sql.Timestamp;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserReactionResponse {
     UserResponse user;
+    String id;
     Timestamp created_at;
     Timestamp updated_at;
     String reaction;

@@ -29,4 +29,5 @@ public class User {
     String status;
     String googleId;
     String email;
+    String location;
 }

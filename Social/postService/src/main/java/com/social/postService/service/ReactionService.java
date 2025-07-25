@@ -156,7 +156,8 @@ public class ReactionService {
                     });
 
             // Xóa UserPostInteraction
-            userPostInteractionRepository.delete(userPostInteraction);
+            userPostInteraction.setReaction(null);
+            userPostInteractionRepository.save(userPostInteraction);
             log.info("Deleted interaction for postId: {} and userId: {}", postId, currentUser.getId());
             return true;
         } catch (Exception e) {

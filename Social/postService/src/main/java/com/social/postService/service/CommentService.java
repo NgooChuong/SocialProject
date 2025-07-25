@@ -39,19 +39,13 @@ public class CommentService {
 
     public List<CommentResponse> list (String postId, int page, int size) {
         Post p = postRepository.findById(postId).orElseThrow(() -> new AppException(ErrorCode.POST_NOT_EXISTED));
-        Pageable pageable =  PageRequest.of(page, size, Sort.by("id").descending());
-        Page<UserPostInteraction> us = userPostInteractionRepository.findByPost(p, pageable);
-        List<Comment> cmts = us.stream()
-                .flatMap(u -> {
-                    List<Comment> comments = commentRepository.findByUserPostInteraction(u).get();
-                    return comments.stream();
-                })
-                .collect(Collectors.toList());
-        return CommentMapper.INSTANCE.toCommentResponses(cmts);
+        Pageable pageable =  PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<Comment> commentPage = commentRepository.findByUserPostInteractionPost(p, pageable);
+
+        return CommentMapper.INSTANCE.toCommentResponses(commentPage.getContent());
     }
 
     public CommentResponse store(CreateCommentRequest createCommentRequest) {
-//        User authenUser = commonService.createInstanceUser();
         User authenUser = userRepository.findById(createCommentRequest.getUserId()).orElse(null);
         Post curPost = postRepository.findById(createCommentRequest.getPostId()).orElseThrow(
                 () -> new AppException(ErrorCode.POST_NOT_EXISTED)
@@ -78,7 +72,7 @@ public class CommentService {
     public CommentResponse update(String commentId, String updateCommentRequest) {
         Comment cmt = commentRepository.findById(commentId).orElseThrow(() -> new AppException(ErrorCode.COMMENT_NOT_EXISTED));
         if (cmt.getUserPostInteraction().getUser().getId().equals(commonService.createInstanceUser().getId())) {
-            cmt.setContent(updateCommentRequest);
+            cmt.setContent(updateCommentRequest.replaceAll("^\"|\"$", ""));
             try {
                 Comment comment = commentRepository.save(cmt);
                 return CommentMapper.INSTANCE.toCommentResponse(comment);

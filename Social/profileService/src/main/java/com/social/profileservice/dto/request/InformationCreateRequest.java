@@ -15,4 +15,5 @@ public class InformationCreateRequest {
     String lastName;
     Date dob;
     String avatar;
+    String location;
 }

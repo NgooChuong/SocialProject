@@ -9,6 +9,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,10 +20,21 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 public class InformationController {
     InformationService informationService;
+
     @GetMapping("/{profileId}")
     ApiResponse<InformationResponse> getProfile(@PathVariable String profileId) {
         return ApiResponse.<InformationResponse>builder()
                 .result(informationService.getProfileByUserId(profileId))
+                .build();
+    }
+
+    @GetMapping("/recommend/{userId}")
+    ApiResponse<Page<InformationResponse>> getUsersRecommend(
+            @PathVariable String userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ApiResponse.<Page<InformationResponse>>builder()
+                .result(informationService.recommendUsers(userId, page, size))
                 .build();
     }
 
@@ -39,17 +51,18 @@ public class InformationController {
                 .result(informationService.createProfile(request))
                 .build();
     }
+
     @DeleteMapping("/{profileId}")
-    ApiResponse<String> deleteUser(@PathVariable String profileId){
+    ApiResponse<String> deleteUser(@PathVariable String profileId) {
         informationService.deleteUser(profileId);
         return ApiResponse.<String>builder()
                 .result("User has been deleted")
                 .build();
     }
 
-    @PutMapping(value = "/{profileId}",consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+    @PutMapping(value = "/{profileId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
             produces = {MediaType.APPLICATION_JSON_VALUE})
-    ApiResponse<InformationResponse> updateUser(@PathVariable String profileId, @ModelAttribute InformationUpdateRequest request){
+    ApiResponse<InformationResponse> updateUser(@PathVariable String profileId, @ModelAttribute InformationUpdateRequest request) {
         return ApiResponse.<InformationResponse>builder()
                 .result(informationService.updateUser(profileId, request))
                 .build();

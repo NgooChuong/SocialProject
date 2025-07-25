@@ -14,7 +14,8 @@ public enum ErrorCode {
     UNAUTHORIZED(1007, "You do not have permission", HttpStatus.FORBIDDEN),
     THREAD_ERROR (1011, "Thread error", HttpStatus.INTERNAL_SERVER_ERROR),
     NOT_FIND_SERVER (1014, "Not find server", HttpStatus.NOT_FOUND),
-    INVALID_TYPE(1012, "Invalid status type", HttpStatus.BAD_REQUEST)
+    INVALID_TYPE(1012, "Invalid status type", HttpStatus.BAD_REQUEST),
+    VIEW_STATUS_ERROR(1013, "View notification is fail", HttpStatus.INTERNAL_SERVER_ERROR),
             ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

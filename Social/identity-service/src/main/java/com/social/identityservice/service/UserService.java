@@ -73,6 +73,7 @@ public class UserService {
         user.setLoginAt(new Date());
         user.setRole(Role.USER.name());
         user.setStatus(StatusAccount.ACTIVE.name());
+        user.setLocation(request.getLocation());
         if (request.getGoogle_id() != null) {
             user.setGoogleId(request.getGoogle_id());
             user.setEmail(request.getEmail());
@@ -87,6 +88,7 @@ public class UserService {
         ClientCreationRequest clientCreationRequest = clientMapper.toClientCreationRequest(request);
         clientCreationRequest.setUserId(user.getUserId());
         clientCreationRequest.setAvatar(avatar);
+        clientCreationRequest.setLocation(request.getLocation());
         // Gọi service profile
         try {
             userUnauthenClent.createUser(clientCreationRequest);

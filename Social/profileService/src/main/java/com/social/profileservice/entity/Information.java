@@ -6,6 +6,7 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Date;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -28,6 +29,9 @@ public class Information {
     String lastName;
     Date dob;
     String avatar;
+    String location;
     @Transient
     private MultipartFile file;
+    @OneToMany(mappedBy = "userInformation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    Set<UserInterest> userInterests;
 }

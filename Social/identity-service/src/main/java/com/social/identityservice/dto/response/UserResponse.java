@@ -22,4 +22,5 @@ public class UserResponse {
     String status;
     String googleId;
     String email;
+    String location;
 }

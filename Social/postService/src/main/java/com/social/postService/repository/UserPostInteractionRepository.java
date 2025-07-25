@@ -1,5 +1,6 @@
 package com.social.postService.repository;
 
+import com.social.postService.entity.Comment;
 import com.social.postService.entity.Post;
 import com.social.postService.entity.User;
 import com.social.postService.entity.UserPostInteraction;
@@ -16,5 +17,4 @@ public interface UserPostInteractionRepository extends JpaRepository<UserPostInt
     Optional<List<UserPostInteraction>> findByPost(Post post);
     Optional<List<UserPostInteraction>> findByPostIn(List<Post> posts);
     Page<UserPostInteraction> findByPost(Post post, Pageable pageable);
-
 }

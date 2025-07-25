@@ -50,7 +50,7 @@ public class ReactionController {
     })
     @PostMapping(value = "/create/{post_id}")
     public ApiResponse<?> updateLikePost(@PathVariable("post_id") String id,
-                                         @ModelAttribute @Valid UpdateReactionRequest updateReactionRequest) {
+                                         @RequestBody @Valid UpdateReactionRequest updateReactionRequest) {
         Boolean res = reactionService.storeOrUpdate(id, updateReactionRequest);
         int code = res ? HttpStatus.OK.value() : HttpStatus.INTERNAL_SERVER_ERROR.value();
         return ApiResponse.<Boolean>builder().result(res).code(code).build();
