@@ -21,14 +21,6 @@ spring:
     port: ${PROFILE_RABBITMQ_PORT:5672}
     username: ${PROFILE_RABBITMQ_USERNAME:guest}
     password: ${PROFILE_RABBITMQ_PASSWORD:guest}
-#  ai:
-#    vectorstore:
-#      qdrant:
-#        host: 8ba05ff2-6fe7-4eee-beae-abb90e95eaa8.europe-west3-0.gcp.cloud.qdrant.io
-#        port: 6333
-#        api-key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0._LrWJcEy6RTX1i-q_JHJVwdP_e6yDp91A_36CiDuaY4
-#        collection-name: friend_suggestion
-#        use-tls: true
 rabbit:
   queue:
     google: ${PROFILE_RABBITMQ_QUEUE_GOOGLE:googleAuthQueue}
@@ -58,10 +50,5 @@ cloudinary:
   api-key: ${CLOUDINARY_API_KEY}
   api-secret: ${CLOUDINARY_API_SECRET}
   secure: true
-
-openai:
-  api:
-    key: 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
-  embedding:
 
   user-id: spring-ai-user
