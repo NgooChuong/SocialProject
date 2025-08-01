@@ -54,7 +54,21 @@ services:
       - ./.env_docker
     networks:
       - app-network
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    ports:
+      - "6333:6333"   # REST API
+      - "6334:6334"   # gRPC API
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    restart: unless-stopped
+    networks:
+      - app-network
+
 volumes:
+  qdrant_storage:
   social_volume_identity:
     external: true  # Đảm bảo rằng volume này đã tồn tại trên Docker
 

@@ -3,6 +3,8 @@ package com.social.postService.dto.response;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -16,4 +18,5 @@ public class InformationResponse {
      String phone;
      String role;
      String avatar;
+     List<String> interests;
 }

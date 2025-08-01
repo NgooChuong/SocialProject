@@ -41,6 +41,7 @@ public class RedisService {
         }
 
     }
+
     // Cập nhật dữ liệu trong Redis với key và object
     public <T> void update(String key, T object) throws JsonProcessingException {
         // Chuyển đối tượng thành JSON string
@@ -59,6 +60,17 @@ public class RedisService {
         String jsonValue = syncCommands.get(key); // Lấy JSON từ Redis
         if (jsonValue != null) {
             return objectMapper.readValue(jsonValue, clazz); // Deserialize JSON thành object
+        }
+        return null;
+    }
+
+    public <T> List<T> getList(String key, Class<T> clazz) throws JsonProcessingException {
+        String jsonValue = syncCommands.get(key);
+        if (jsonValue != null) {
+             return objectMapper.readValue(
+                        jsonValue,
+                        objectMapper.getTypeFactory().constructCollectionType(List.class, clazz)
+                );
         }
         return null;
     }

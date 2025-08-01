@@ -35,6 +35,19 @@ spring:
 redis:
   host: ${REDIS_URL:redis://localhost:6379}
 
+qdrant:
+  port: 6333
+  endpoint: localhost
+  api:
+    key: duVIbZKlLEZGBRtDXTlXO9FZuHU0RNnn
+
+
+google:
+  embedded: models/embedding-001
+  url: https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=
+  api:
+    key: AIzaSyBsc9mToLYXAqwae405XhtxBVRRVMZDJ_Q
+
 jwt:
   signerKey: ${POST_JWT_SIGNER_KEY:1TjXchw5FloESb63Kc+DFhTARvpWL4jUGCwfGWxuG5SIf/1y/LgJxHnMqaF6A/ij}
 

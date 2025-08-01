@@ -30,6 +30,10 @@ public enum ErrorCode {
     COMMENT_NOT_EXISTED(1020, "Comment not existed", HttpStatus.NOT_FOUND),
     COMMENT_UPDATE_FAILED (1021, "Comment update failed", HttpStatus.INTERNAL_SERVER_ERROR),
     COMMENT_DELETE_FAILED (1022, "Comment delete failed", HttpStatus.INTERNAL_SERVER_ERROR),
+    GET_COLLECTION_NAME_FAIL (1023, "Get collection in qdrant fail", HttpStatus.INTERNAL_SERVER_ERROR),
+    SEARCH_VECTOR_FAIL(1024, "Search in qdrant fail", HttpStatus.INTERNAL_SERVER_ERROR),
+    GET_CACHE_ERROR(1025, "Get cache in redis fail", HttpStatus.INTERNAL_SERVER_ERROR),
+
     ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {

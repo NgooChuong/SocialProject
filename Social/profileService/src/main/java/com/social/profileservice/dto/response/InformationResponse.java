@@ -1,9 +1,11 @@
 package com.social.profileservice.dto.response;
 
+import com.social.profileservice.enums.InterestType;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.util.Date;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -18,4 +20,6 @@ public class InformationResponse {
      String avatar;
      Double score;
      String location;
+     List<InterestType> interests;
+
 }

@@ -8,10 +8,7 @@ import com.social.postService.dto.request.CreatePostRequest;
 import com.social.postService.dto.request.UpdatePostRequest;
 import com.social.postService.dto.request.message.NotificationPostMessage;
 import com.social.postService.dto.request.message.UserNotiMessage;
-import com.social.postService.dto.response.InformationResponse;
-import com.social.postService.dto.response.PostResponse;
-import com.social.postService.dto.response.ReactionResponse;
-import com.social.postService.dto.response.UserResponse;
+import com.social.postService.dto.response.*;
 import com.social.postService.entity.*;
 import com.social.postService.enums.MediaType;
 import com.social.postService.exception.AppException;
@@ -20,34 +17,37 @@ import com.social.postService.mapper.PostMapper;
 import com.social.postService.mapper.UserMapper;
 import com.social.postService.repository.*;
 import com.social.postService.repository.httpClient.FriendClient;
+import com.social.postService.repository.httpClient.GoogleEmbeddingClient;
+import com.social.postService.repository.httpClient.ProfileClient;
 import com.social.postService.service.messageproducer.KafkaProducerService;
+import io.qdrant.client.QdrantClient;
+import io.qdrant.client.grpc.Points;
 import jakarta.transaction.Transactional;
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-
+import io.qdrant.client.grpc.Collections.VectorParams;
+import io.qdrant.client.grpc.Collections.Distance;
 @Service
 @Transactional
 @Slf4j
 public class PostService {
+    private final String TAG_COLLECTION_NAME = "tags";
     private final PostRepository postRepository;
     private final TagRepository tagRepository;
     private final PictureRepository pictureRepository;
@@ -56,14 +56,17 @@ public class PostService {
     private final UserPostInteractionRepository userPostInteractionRepository;
     private final CommentRepository commentRepository;
     private final FriendClient friendClient;
+    private final ProfileClient profileClient;
     private final KafkaProducerService kafkaProducerService;
     private final RedisService redisService;
     private static final ExecutorService uploadExecutor = Executors.newFixedThreadPool(4);
-
+    private final GoogleEmbeddingClient embeddingClient;
+    private final QdrantClient qdrantClient;
+    private final PaginationService paginationService;
     @Value("${kafka.topic}")
     private String topic;
 
-    public PostService(PostRepository postRepository, TagRepository tagRepository, PictureRepository pictureRepository, Cloudinary cloudinary, CommonService commonService, UserPostInteractionRepository userPostInteractionRepository, CommentRepository commentRepository, FriendClient friendClient, KafkaProducerService kafkaProducerService, RedisService redisService) {
+    public PostService(PostRepository postRepository, TagRepository tagRepository, PictureRepository pictureRepository, Cloudinary cloudinary, CommonService commonService, UserPostInteractionRepository userPostInteractionRepository, CommentRepository commentRepository, ProfileClient profileClient, FriendClient friendClient, GoogleEmbeddingClient embeddingClient, QdrantClient qdrantClient, KafkaProducerService kafkaProducerService, PaginationService paginationService, RedisService redisService) {
         this.postRepository = postRepository;
         this.tagRepository = tagRepository;
         this.pictureRepository = pictureRepository;
@@ -74,6 +77,10 @@ public class PostService {
         this.friendClient = friendClient;
         this.kafkaProducerService = kafkaProducerService;
         this.redisService = redisService;
+        this.profileClient = profileClient;
+        this.embeddingClient = embeddingClient;
+        this.qdrantClient = qdrantClient;
+        this.paginationService = paginationService;
     }
 
     private void storeTagsNonAvailable(List<String> tags) {
@@ -481,5 +488,119 @@ public class PostService {
         } catch (Exception e) {
             throw new AppException(ErrorCode.DELETE_ERROR);
         }
+    }
+
+    private List<String> searchRelatedTagNames(List<Float> interestEmbedding, String collectionName, int limit) {
+        try {
+            if (interestEmbedding == null || interestEmbedding.isEmpty()) {
+                return Collections.emptyList();
+            }
+
+            boolean exists = qdrantClient.collectionExistsAsync(collectionName).get();
+            if (!exists) {
+                return Collections.emptyList();
+            }
+
+            Points.SearchPoints.Builder builder = Points.SearchPoints.newBuilder()
+                    .setCollectionName(collectionName)
+                    .addAllVector(interestEmbedding)
+                    .setLimit(limit)
+                    .setWithPayload(Points.WithPayloadSelector.newBuilder()
+                            .setEnable(true)
+                            .build());
+
+            List<Points.ScoredPoint> points = qdrantClient.searchAsync(builder.build()).get();
+
+            List<String> tagNames = new ArrayList<>();
+            for (Points.ScoredPoint point : points) {
+                if (point.getScore() >= 0.6 && point.getPayloadMap().containsKey("tag_name")) {
+                    String tagName = point.getPayloadMap().get("tag_name").getStringValue();
+                    tagNames.add(tagName);
+                }
+            }
+
+            return tagNames;
+        } catch (Exception e) {
+            throw new AppException(ErrorCode.SEARCH_VECTOR_FAIL);
+        }
+    }
+    private void cachePostsToRedisAsync(String cacheKey, List<Post> posts, int ttlSeconds) {
+        List<PostResponse> postResponses = posts.stream()
+                .map(PostMapper.INSTANCE::toPostResponse)
+                .collect(Collectors.toList());
+
+        CompletableFuture.runAsync(() -> {
+            redisService.save(cacheKey, postResponses, ttlSeconds);
+            log.info("✅ Cached {} posts for key: {}", postResponses.size(), cacheKey);
+
+        });
+    }
+    private List<PostResponse> filterBeforeResponse(List<PostResponse> posts, LocalDateTime before) {
+        if (before == null) return posts;
+        Instant beforeInstant = before.atZone(ZoneId.systemDefault()).toInstant();
+        return posts.stream()
+                .filter(post -> post.getCreatedAt().toInstant().isBefore(beforeInstant))
+                .collect(Collectors.toList());
+    }
+
+    public Page<?> recommend(LocalDateTime before, int size) {
+        List<String> friendIds = friendClient.getAllYourFriends().getResult();
+        User user = commonService.createInstanceUser();
+        Pageable pageable = PageRequest.of(0, size);
+
+        String cacheKey = "recommendation:user:" + user.getId();
+
+        try {
+            List<PostResponse> cachedPosts = redisService.getList(cacheKey, PostResponse.class);
+            if (cachedPosts != null && !cachedPosts.isEmpty()) {
+                List<PostResponse> filtered = filterBeforeResponse(cachedPosts, before);
+                return paginationService.paginate(
+                        filtered,
+                        pageable,
+                        Function.identity()
+                );
+            }
+        } catch (JsonProcessingException je) {
+            throw new AppException(ErrorCode.GET_CACHE_ERROR);
+        }
+
+
+
+        List<String> myInterest = profileClient.getProfile(user.getId()).getResult().getInterests();
+        EmbeddingResponse interestEmbeddingResponse = embeddingClient.embed(String.join(" ", myInterest));
+        List<Float> interestEmbedding = interestEmbeddingResponse.getEmbedding().getValues();
+        try {
+            String collection_name_user = TAG_COLLECTION_NAME;
+            if (!qdrantClient.collectionExistsAsync(collection_name_user).get()){
+                qdrantClient.createCollectionAsync(collection_name_user,
+                                VectorParams.newBuilder()
+                                        .setDistance(Distance.Cosine)
+                                        .setSize(interestEmbedding.size())
+                                        .build())
+                        .get();
+            }
+
+        } catch (Exception e) {
+            throw new AppException(ErrorCode.GET_COLLECTION_NAME_FAIL);
+        }
+        List<String> relatedTags = searchRelatedTagNames(interestEmbedding, TAG_COLLECTION_NAME, 10);
+
+
+        List<Post> relatedPostWithInterest = postRepository.findByTagNamesExcludeUserBefore(relatedTags, user.getId(),before);
+        List<Post> listPostOfFriends = postRepository.findByUserIdInBefore(friendIds, before);
+        Set<Post> mergedSet = new LinkedHashSet<>();
+        mergedSet.addAll(listPostOfFriends);
+        mergedSet.addAll(relatedPostWithInterest);
+        List<Post> mergedPosts = new ArrayList<>(mergedSet);
+        // Sắp xếp theo thời gian tạo nếu có trường `createdAt`
+        mergedPosts.sort(Comparator.comparing(Post::getCreatedAt).reversed());
+
+        cachePostsToRedisAsync(cacheKey, mergedPosts, 300);
+
+        return paginationService.paginate(
+                mergedPosts,
+                pageable,
+                PostMapper.INSTANCE::toPostResponse
+        );
     }
 }
